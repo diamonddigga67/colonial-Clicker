@@ -801,3 +801,86 @@ body::before {
 .larva-pulse {
     box-shadow: 0 0 40px #0ff, 0 0 80px #0ff inset !important;
 }
+#gravity-cavern-viewport {
+    position: relative;
+    width: 400px;
+    height: 600px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: inset 0 0 80px #000a;
+}
+.cavern-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 20%, #0ff1 0%, transparent 60%);
+    pointer-events: none;
+}
+#larva {
+    animation: larvaBreath 1.8s infinite ease-in-out;
+}
+
+@keyframes larvaBreath {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+}
+.larva-thrust-left::after,
+.larva-thrust-right::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 30px;
+    bottom: -10px;
+    left: 15px;
+    background: #0ff6;
+    filter: blur(4px);
+    border-radius: 50%;
+}
+.magnet-crystal {
+    animation: magnetPulse 2s infinite ease-in-out;
+}
+
+@keyframes magnetPulse {
+    0% { box-shadow: 0 0 12px #0ff4; }
+    50% { box-shadow: 0 0 24px #0ff8; }
+    100% { box-shadow: 0 0 12px #0ff4; }
+}
+.spore-vent::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 5px;
+    top: 5px;
+    background: #0f05;
+    border-radius: 50%;
+    filter: blur(6px);
+}
+.lumen {
+    animation: lumenPulse 1.2s infinite ease-in-out, lumenSparkle 0.4s infinite;
+}
+
+@keyframes lumenSparkle {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+}
+.nutrient {
+    animation: nutrientPulse 1s infinite alternate, nutrientWobble 1.6s infinite ease-in-out;
+}
+
+@keyframes nutrientWobble {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
+}
+.ancient-cell {
+    animation: ancientPulse 1.4s infinite ease-in-out, ancientRadiate 2.4s infinite ease-in-out;
+}
+
+@keyframes ancientRadiate {
+    0% { box-shadow: 0 0 18px #ff08; }
+    50% { box-shadow: 0 0 36px #ff0a; }
+    100% { box-shadow: 0 0 18px #ff08; }
+}
