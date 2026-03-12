@@ -2039,6 +2039,25 @@ function spawnMagnet(x, y, strength = 0.4) {
     return m;
 }
 
+function applyMagneticForces() {
+    const magnets = document.querySelectorAll(".magnet-crystal");
+
+    magnets.forEach(m => {
+        const mx = parseFloat(m.style.left) + 20;
+        const my = parseFloat(m.style.top) + 20;
+
+        const dx = mx - larvaX;
+        const dy = my - larvaY;
+
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 200) {
+            const force = m.dataset.strength / dist;
+            velX += dx * force;
+            velY += dy * force;
+        }
+    });
+}
+applyMagneticForces();
 
 /* INITIALIZE */
 loadGame();
