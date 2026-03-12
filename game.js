@@ -23,6 +23,7 @@ let archaeotechPermanent = {
     goldenDurationPercent: 0,
     branchPercent: 0
 };
+
 /* ============================
       BURROW NETWORK MINIGAME
 ============================ */
@@ -66,7 +67,7 @@ function initBurrowNetwork() {
     const buildMenu = document.getElementById("burrow-build-menu");
 
     if (startBtn) startBtn.addEventListener("click", startBurrowRun);
-    if (endBtn) endBtn.addEventListener("click", endBurrowRun);
+    if (endBtn) startBtn.addEventListener("click", endBurrowRun);
 
     if (gridEl) {
         gridEl.addEventListener("click", onBurrowGridClick);
@@ -76,7 +77,6 @@ function initBurrowNetwork() {
         buildMenu.addEventListener("click", onBurrowBuildMenuClick);
     }
 
-    // Close popup when clicking outside
     document.addEventListener("click", (e) => {
         const menu = document.getElementById("burrow-build-menu");
         const grid = document.getElementById("burrow-grid");
@@ -95,8 +95,6 @@ function showMinigamePanel(id) {
     const target = document.getElementById(id);
     if (target) target.style.display = "block";
 }
-
-/* Run lifecycle */
 
 function startBurrowRun() {
     if (burrowGame.inRun) return;
@@ -118,8 +116,6 @@ function endBurrowRun(reason = "Run ended.") {
     renderBurrowGrid();
     updateBurrowUI();
 }
-
-/* Grid generation */
 
 function createBurrowGrid() {
     const grid = [];
@@ -143,7 +139,6 @@ function createBurrowGrid() {
     queenTile.type = BurrowTileType.QUEEN;
     queenTile.revealed = true;
 
-    // Randomly seed hidden special tiles
     const candidates = [];
     for (let y = 0; y < BURROW_SIZE; y++) {
         for (let x = 0; x < BURROW_SIZE; x++) {
@@ -173,7 +168,6 @@ function createBurrowGrid() {
         candidates[idx].type = BurrowTileType.ANCIENT;
     }
 
-    // All others remain "hidden" but will reveal as dirt
     return grid;
 }
 
@@ -183,8 +177,6 @@ function shuffleArray(arr) {
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
 }
-
-/* Rendering */
 
 function renderBurrowGrid() {
     const gridEl = document.getElementById("burrow-grid");
@@ -215,8 +207,6 @@ function renderBurrowGrid() {
                     label = "Q";
                     break;
                 case BurrowTileType.DIRT:
-                    label = "";
-                    break;
                 case BurrowTileType.TUNNEL:
                     label = "";
                     break;
@@ -251,8 +241,6 @@ function renderBurrowGrid() {
     }
 }
 
-/* Click handling */
-
 function onBurrowGridClick(e) {
     if (!burrowGame.inRun) return;
     const tileEl = e.target.closest(".burrow-tile");
@@ -264,7 +252,6 @@ function onBurrowGridClick(e) {
 
     if (!tile) return;
 
-    // Each action costs 1 worm
     if (burrowGame.worms <= 0) {
         setBurrowStatus("No worms left. Run will end.");
         endBurrowRun("No worms left.");
@@ -283,8 +270,6 @@ function onBurrowGridClick(e) {
 
 function burrowDig(tile) {
     burrowGame.worms--;
-
-    // Reveal tile
     tile.revealed = true;
 
     if (tile.type === BurrowTileType.RESOURCE) {
@@ -299,7 +284,6 @@ function burrowDig(tile) {
         setBurrowStatus("Ancient burrow discovered! Q‑Essence surges.");
         burrowGame.totalResourcesThisRun += 3;
         grantBurrowQEssence(3 + Math.floor(Math.random() * 3));
-        // Turn it into dirt for further expansion
         tile.type = BurrowTileType.DIRT;
     } else {
         tile.type = BurrowTileType.DIRT;
@@ -348,8 +332,6 @@ function burrowHarvest(tile) {
     setBurrowStatus("Resources harvested. Worm branch grows stronger.");
 }
 
-/* Build menu */
-
 function showBurrowBuildMenu(tile) {
     const menu = document.getElementById("burrow-build-menu");
     const grid = document.getElementById("burrow-grid");
@@ -386,7 +368,6 @@ function onBurrowBuildMenuClick(e) {
 
     if (type === "nursery") {
         tile.type = BurrowTileType.NURSERY;
-        burrowGame.baseWorms += 0; // permanent handled separately if you want
         burrowGame.worms += 1;
         setBurrowStatus("Nursery built. +1 worm this run.");
     } else if (type === "storage") {
@@ -405,8 +386,6 @@ function onBurrowBuildMenuClick(e) {
     updateBurrowUI();
 }
 
-/* Rewards */
-
 function applyBurrowRewards() {
     const gained = burrowGame.totalResourcesThisRun;
 
@@ -415,21 +394,17 @@ function applyBurrowRewards() {
         return;
     }
 
-    // Temporary worm CPS boost
     const duration = 30000;
     const boost = 2;
     setBurrowStatus(`Burrow yields ${gained} resources. Worm CPS x${boost} for 30s.`);
     burrowApplyTemporaryWormBoost(boost, duration);
 
-    // Small permanent bonus
     const permGain = Math.min(3, gained);
     burrowGame.permBonusPercent += permGain;
     applyBurrowPermanentBonus();
 }
 
 function burrowApplyTemporaryWormBoost(multiplier, duration) {
-    // Reuse wormEventMultiplier if you already have it
-    if (typeof wormEventMultiplier === "undefined") return;
     wormEventMultiplier *= multiplier;
     setTimeout(() => {
         wormEventMultiplier /= multiplier;
@@ -437,21 +412,15 @@ function burrowApplyTemporaryWormBoost(multiplier, duration) {
 }
 
 function applyBurrowPermanentBonus() {
-    // Hook this into your worm branch CPS calculation
-    // Example: store in a global used in getWormCps()
-    // Here we just keep it on burrowGame.permBonusPercent
+    // Hook into worm CPS if desired; currently stored in burrowGame.permBonusPercent
 }
-
-/* Q‑Essence hook (optional) */
 
 function grantBurrowQEssence(amount) {
     if (typeof qEssence !== "undefined") {
         qEssence += amount;
-        updateDisplay && updateDisplay();
+        if (typeof updateDisplay === "function") updateDisplay();
     }
 }
-
-/* UI helpers */
 
 function updateBurrowUI() {
     const wormsEl = document.getElementById("burrow-worms");
@@ -467,8 +436,6 @@ function setBurrowStatus(text) {
     const el = document.getElementById("burrow-status");
     if (el) el.textContent = text;
 }
-
-/* Save / load hooks */
 
 function saveBurrowData() {
     return {
@@ -486,7 +453,10 @@ function loadBurrowData(data) {
     updateBurrowUI();
 }
 
-/* Q‑Essence / Q‑Tree */
+/* ============================
+      Q‑ESSENCE / Q‑TREE
+============================ */
+
 let qEssence = 0;
 const qUpgrades = [
     { id: "q_crit",   name: "Quantum Probability", desc: "+5% crit chance",      cost: 5,  bought: false },
@@ -507,7 +477,6 @@ colonialImg.onclick = (event) => {
     let gain = clickPower * clickEventMultiplier * tempClickMultiplier;
     let isCrit = false;
 
-    // Quantum Pilgrims: 10% chance for 10x click (+5% if Q_crit)
     const quantum = getBuilding("quantum");
     let critChance = 0.10;
     if (isQBought("q_crit")) critChance += 0.05;
@@ -519,10 +488,8 @@ colonialImg.onclick = (event) => {
         }
     }
 
-    // Ascended Touch
     if (isQBought("q_click")) gain *= 3;
 
-    // Psionic Ophidians: extra CPS-based click gain (1x CPS)
     const psionic = getBuilding("psionic");
     if (psionic && psionic.owned > 0) {
         gain += Math.floor(getTotalCps());
@@ -536,6 +503,7 @@ colonialImg.onclick = (event) => {
 /* FLOATING TEXT */
 function spawnFloat(event, amount, isCrit) {
     const container = document.getElementById("float-container");
+    if (!container) return;
     const float = document.createElement("div");
     float.className = "float";
     if (isCrit) float.classList.add("crit");
@@ -555,6 +523,7 @@ function spawnFloat(event, amount, isCrit) {
 
 function showGoldenMessage(text) {
     const msg = document.getElementById("golden-message");
+    if (!msg) return;
     msg.innerText = text;
     msg.style.opacity = 1;
 
@@ -565,7 +534,6 @@ function showGoldenMessage(text) {
 
 /* BUILDINGS (EVOLUTIONS) */
 const buildings = [
-    // TIER 1
     {
         id: "gravital",
         name: "Gravital Adaptation",
@@ -605,8 +573,6 @@ const buildings = [
         requiresOwned: 0,
         description: "Colonials become serpentine posthumans."
     },
-
-    // TIER 2
     {
         id: "ruin",
         name: "Ruin Haunters",
@@ -685,8 +651,6 @@ const buildings = [
         requiresOwned: 1,
         description: "Aristocratic ophidian dynasties."
     },
-
-    // TIER 3
     {
         id: "starDwellers",
         name: "Star-Dwellers",
@@ -765,8 +729,6 @@ const buildings = [
         requiresOwned: 1,
         description: "Imperial serpent dynasties."
     },
-
-    // TIER 4 (SPECIAL ABILITIES)
     {
         id: "voidborne",
         name: "Voidborne Colonials",
@@ -905,30 +867,24 @@ const boosts = [
     }
 ];
 
-/* HELPERS */
 function getBuilding(id) {
     return buildings.find(b => b.id === id);
 }
 
-/* TOTAL CPS CALCULATION */
 function getTotalCps() {
     let total = 0;
 
-    // Worm branch multiplier from Subterranean Empires (+50%)
     const subterranean = getBuilding("subterranean");
     wormBranchMultiplier = (subterranean && subterranean.owned > 0) ? 1.5 : 1;
 
-    // Imperial Serpents global bonus (+5% per)
     const imperial = getBuilding("imperial");
     imperialBonusMultiplier = imperial ? (1 + 0.05 * imperial.owned) : 1;
 
     let qCpsBonus = 1;
     let snakeBonus = 1;
 
-    // Gravitic Overcharge
     if (isQBought("q_cps")) qCpsBonus *= 1.10;
 
-    // Serpent Dominion
     if (isQBought("q_snake")) {
         const snakeOwned = buildings
             .filter(b => b.branch === "snake")
@@ -960,7 +916,6 @@ function getTotalCps() {
     return total;
 }
 
-/* UPDATE DISPLAY + CLICK POWER SCALING */
 function updateDisplay() {
     const g = getBuilding("gravital");
     const w = getBuilding("worm");
@@ -977,9 +932,9 @@ function updateDisplay() {
     document.getElementById("cps-counter").innerText = `CPS: ${getTotalCps()}`;
 }
 
-/* RENDER BUILDINGS */
 function renderBuildings() {
     const container = document.getElementById("buildings");
+    if (!container) return;
     container.innerHTML = "";
 
     buildings.forEach((b, index) => {
@@ -1002,15 +957,12 @@ function renderBuildings() {
     });
 }
 
-/* BUY BUILDING */
 function buyBuilding(i) {
     const b = buildings[i];
 
     if (colonials >= b.cost) {
         colonials -= b.cost;
         b.owned++;
-
-        // Price increases by 25% each purchase
         b.cost = Math.floor(b.baseCost * Math.pow(1.25, b.owned));
 
         updateDisplay();
@@ -1020,9 +972,9 @@ function buyBuilding(i) {
     }
 }
 
-/* RENDER BOOSTS */
 function renderBoosts() {
     const container = document.getElementById("boosts");
+    if (!container) return;
     container.innerHTML = "";
 
     boosts.forEach(u => {
@@ -1042,7 +994,6 @@ function renderBoosts() {
     });
 }
 
-/* BUY BOOST */
 function buyBoost(id) {
     const u = boosts.find(x => x.id === id);
     const building = getBuilding(u.building);
@@ -1062,7 +1013,6 @@ function buyBoost(id) {
 
 /* SPECIAL ABILITIES TIMERS */
 
-/* Voidborne Colonials: Gravity Well (every 10s, +15x CPS burst) */
 setInterval(() => {
     const voidborne = getBuilding("voidborne");
     if (voidborne && voidborne.owned > 0) {
@@ -1072,7 +1022,6 @@ setInterval(() => {
     }
 }, 10000);
 
-/* Planet-Eaters: Consumption Cycle (every 30s, CPS x4 for 10s) */
 setInterval(() => {
     const planetEaters = getBuilding("planetEaters");
     if (planetEaters && planetEaters.owned > 0) {
@@ -1083,36 +1032,27 @@ setInterval(() => {
     }
 }, 30000);
 
-/* AUTO-GENERATE COLONIALS */
 setInterval(() => {
     colonials += getTotalCps();
     updateDisplay();
     saveGame();
 }, 1000);
 
-document.getElementById("btn-gravity-nav").addEventListener("click", () => {
-    showMinigamePanel("gravity-nav-panel");
-});
+const btnGravityNav = document.getElementById("btn-gravity-nav");
+if (btnGravityNav) {
+    btnGravityNav.addEventListener("click", () => {
+        showMinigamePanel("gravity-nav-panel");
+    });
+}
 
 /* ============================
       GOLDEN EVENTS SYSTEM
 ============================ */
 
-function showGoldenMessage(text) {
-    const msg = document.getElementById("golden-message");
-    msg.innerText = text;
-    msg.style.opacity = 1;
-
-    setTimeout(() => {
-        msg.style.opacity = 0;
-    }, 1800);
-}
-
 function spawnGoldenEvent() {
     const layer = document.getElementById("event-layer");
     if (!layer) return;
 
-    // Avoid multiple at once
     if (layer.querySelector(".golden-event")) return;
 
     const orb = document.createElement("div");
@@ -1155,7 +1095,6 @@ function triggerRandomEvent() {
     }
 }
 
-/* Gravity Surge: +500% CPS (x6) for 20s */
 function gravitySurge() {
     showGoldenMessage("Gravity Surge! +500% CPS for 20s");
     goldenCpsMultiplier = 6;
@@ -1164,7 +1103,6 @@ function gravitySurge() {
     }, 20000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
-/* Genetic Bloom: +1% CPS per building owned for 30s */
 function geneticBloom() {
     let totalOwned = 0;
     buildings.forEach(b => totalOwned += b.owned);
@@ -1177,7 +1115,6 @@ function geneticBloom() {
     }, 30000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
-/* Cosmic Visitor: instant 10x CPS */
 function cosmicVisitor() {
     showGoldenMessage("Cosmic Visitor! Instant 10× CPS");
     colonials += getTotalCps() * 10;
@@ -1185,7 +1122,6 @@ function cosmicVisitor() {
     saveGame();
 }
 
-/* Ophidian Blessing: 50x click power for 15s */
 function ophidianBlessing() {
     showGoldenMessage("Ophidian Blessing! 50× click power for 15s");
     clickEventMultiplier = 50;
@@ -1194,7 +1130,6 @@ function ophidianBlessing() {
     }, 15000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
-/* Wormquake: Worm branch +1000% CPS (x11) for 20s */
 function wormquake() {
     showGoldenMessage("Wormquake! Worm CPS massively boosted");
     wormEventMultiplier = 11;
@@ -1203,7 +1138,6 @@ function wormquake() {
     }, 20000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
-/* Q Glimpse: random one of the above */
 function qGlimpse() {
     showGoldenMessage("Q Glimpse! Reality shifts…");
     const events = [gravitySurge, geneticBloom, cosmicVisitor, ophidianBlessing, wormquake];
@@ -1211,11 +1145,10 @@ function qGlimpse() {
     fn();
 }
 
-/* Schedule golden events every 60–120s */
 function scheduleGoldenEvents() {
     let base = 60000 + Math.random() * 60000;
 
-    if (isQBought("q_golden")) base *= 0.8; // +20% frequency
+    if (isQBought("q_golden")) base *= 0.8;
     base = base / tempGoldenFreqFactor;
 
     setTimeout(() => {
@@ -1229,7 +1162,6 @@ function scheduleGoldenEvents() {
 ============================ */
 
 function getTotalColonialsForPrestige() {
-    // Simple log-based formula
     return Math.floor(Math.log10(Math.max(colonials, 1)));
 }
 
@@ -1244,7 +1176,6 @@ function ascend() {
 
     qEssence += gained;
 
-    // Reset run state
     colonials = 0;
     buildings.forEach(b => {
         b.owned = 0;
@@ -1253,7 +1184,6 @@ function ascend() {
     });
     boosts.forEach(u => u.bought = false);
 
-    // Clear temporary multipliers
     eventMultiplier = 1;
     goldenCpsMultiplier = 1;
     wormEventMultiplier = 1;
@@ -1272,7 +1202,7 @@ function ascend() {
 function renderQTree() {
     const circle = document.getElementById("qtree-circle");
     const display = document.getElementById("q-essence-display");
-    if (!circle) return;
+    if (!circle || !display) return;
 
     display.innerText = `Q‑Essence: ${qEssence}`;
 
@@ -1338,8 +1268,8 @@ let wormUpgrades = {
 function initWormWeb() {
     const container = document.getElementById("worm-upgrade-web");
     const svg = document.getElementById("worm-web-lines");
+    if (!container || !svg) return;
 
-    // Position nodes
     document.querySelectorAll(".web-node").forEach(node => {
         const id = parseInt(node.dataset.upg);
         const data = wormWebNodes.find(n => n.id === id);
@@ -1349,7 +1279,6 @@ function initWormWeb() {
         node.addEventListener("click", () => tryUnlockWormUpgrade(id));
     });
 
-    // Draw connecting lines
     wormWebNodes.forEach(n => {
         if (!n.prereq) return;
 
@@ -1377,12 +1306,11 @@ function initWormWeb() {
 function tryUnlockWormUpgrade(id) {
     const node = wormWebNodes.find(n => n.id === id);
 
-    // Check prereqs
     if (node.prereq) {
         const prereqs = Array.isArray(node.prereq) ? node.prereq : [node.prereq];
         for (const p of prereqs) {
             if (wormUpgrades[p] !== "completed") {
-                return; // can't unlock yet
+                return;
             }
         }
     }
@@ -1404,7 +1332,6 @@ function updateWormWebUI() {
     });
 }
 
-
 /* ============================
       MINIGAME PANELS
 ============================ */
@@ -1414,32 +1341,40 @@ const miniTitle = document.getElementById("minigame-title");
 const miniContent = document.getElementById("minigame-content");
 const qPanel = document.getElementById("qtree-panel");
 
-document.getElementById("btn-archaeotech").onclick = () => openArchaeotechLab();
+const btnArch = document.getElementById("btn-archaeotech");
+if (btnArch) btnArch.onclick = () => openArchaeotechLab();
 
-document.getElementById("btn-gravity").onclick = () =>
+const btnGrav = document.getElementById("btn-gravity");
+if (btnGrav) btnGrav.onclick = () =>
     openSimpleMinigame("Gravity Navigation",
         "Steer gravity waves to hit targets and gain temporary CPS boosts.");
 
-document.getElementById("btn-burrow").onclick = () =>
+const btnBurrow = document.getElementById("btn-burrow");
+if (btnBurrow) btnBurrow.onclick = () =>
     openSimpleMinigame("Burrow Network",
-        "Connect tunnels between nodes to boost Worm branch production. ");
+        "Connect tunnels between nodes to boost Worm branch production.");
 
-document.getElementById("btn-neural").onclick = () =>
+const btnNeural = document.getElementById("btn-neural");
+if (btnNeural) btnNeural.onclick = () =>
     openSimpleMinigame("Neural Web",
         "Link neurons into circuits for psionic bonuses.");
 
-document.getElementById("btn-qtree").onclick = () => {
+const btnQTree = document.getElementById("btn-qtree");
+if (btnQTree) btnQTree.onclick = () => {
     qPanel.classList.remove("hidden");
     renderQTree();
 };
 
-document.getElementById("close-minigame").onclick = () =>
+const closeMini = document.getElementById("close-minigame");
+if (closeMini) closeMini.onclick = () =>
     miniPanel.classList.add("hidden");
 
-document.getElementById("close-qtree").onclick = () =>
+const closeQTree = document.getElementById("close-qtree");
+if (closeQTree) closeQTree.onclick = () =>
     qPanel.classList.add("hidden");
 
-document.getElementById("ascend-btn").onclick = ascend;
+const ascendBtn = document.getElementById("ascend-btn");
+if (ascendBtn) ascendBtn.onclick = ascend;
 
 function openSimpleMinigame(title, text) {
     miniTitle.innerText = title;
@@ -1478,7 +1413,6 @@ function startNewRuinRun() {
     ruinState.message = "Explore the ruins. Avoid hazards, extract relics.";
     ruinState.grid = [];
 
-    // Balanced distribution: 40% empty, 25% relic, 15% hazard, 10% core, 5% rare, 5% cache
     for (let y = 0; y < RUIN_SIZE; y++) {
         const row = [];
         for (let x = 0; x < RUIN_SIZE; x++) {
@@ -1500,7 +1434,6 @@ function startNewRuinRun() {
         ruinState.grid.push(row);
     }
 
-    // Place player on a safe tile
     let px, py;
     while (true) {
         px = Math.floor(Math.random() * RUIN_SIZE);
@@ -1549,16 +1482,6 @@ function renderRuinUI() {
             if (tile.type === "cache") classes.push("cache");
             if (isPlayer) classes.push("player");
 
-            let symbol = "";
-            if (tile.revealed) {
-                if (tile.type === "empty") symbol = "";
-                if (tile.type === "relic") symbol = "R";
-                if (tile.type === "hazard") symbol = "!";
-                if (tile.type === "core") symbol = "C";
-                if (tile.type === "rare") symbol = "★";
-                if (tile.type === "cache") symbol = "?";
-            }
-
             html += `<div class="${classes.join(" ")}"></div>`;
         }
     }
@@ -1566,7 +1489,6 @@ function renderRuinUI() {
     html += `</div>`;
     miniContent.innerHTML = html;
 
-    // Add tooltips after DOM insert
     const tiles = miniContent.querySelectorAll(".ruin-tile");
     let idx = 0;
     for (let y = 0; y < RUIN_SIZE; y++) {
@@ -1686,19 +1608,16 @@ function ruinExtract() {
 function applyRelicReward() {
     const roll = Math.random();
     if (roll < 0.33) {
-        // CPS boost
         tempCpsMultiplier *= 3;
         setTimeout(() => {
             tempCpsMultiplier /= 3;
         }, 30000);
     } else if (roll < 0.66) {
-        // Click boost
         tempClickMultiplier *= 1.5;
         setTimeout(() => {
             tempClickMultiplier /= 1.5;
         }, 60000);
     } else {
-        // Golden frequency
         tempGoldenFreqFactor *= 1.5;
         setTimeout(() => {
             tempGoldenFreqFactor /= 1.5;
@@ -1728,7 +1647,6 @@ function applyCacheReward() {
         applyRareRelicReward();
         ruinState.message = "A hidden cache reveals a rare relic. Permanent power gained.";
     } else {
-        // Legendary: big Q‑Essence + permanent buff
         const gained = 5 + Math.floor(Math.random() * 6);
         qEssence += gained;
         archaeotechPermanent.cpsPercent += 2;
@@ -1739,107 +1657,10 @@ function applyCacheReward() {
 }
 
 /* ============================
-      SAVE / LOAD SYSTEM
+      GRAVITY NAVIGATION
 ============================ */
 
-function saveGame() {
-    const saveData = {
-        colonials: colonials,
-        buildings: buildings.map(b => ({
-            id: b.id,
-            owned: b.owned,
-            cost: b.cost,
-            burrow: saveBurrowData(),
-            multiplier: b.multiplier
-        })),
-        boosts: boosts.map(u => ({
-            id: u.id,
-            bought: u.bought
-        })),
-        qEssence: qEssence,
-        qUpgrades: qUpgrades.map(u => ({
-            id: u.id,
-            bought: u.bought
-        })),
-        archaeotechPermanent: archaeotechPermanent
-    };
-
-    localStorage.setItem("colonialClickerSave", JSON.stringify(saveData));
-}
-
-function loadGame() {
-    const raw = localStorage.getItem("colonialClickerSave");
-    if (!raw) return;
-
-    const data = JSON.parse(raw);
-
-    if (data.burrow) loadBurrowData(data.burrow);
-
-    colonials = data.colonials ?? 0;
-
-    data.buildings?.forEach(saved => {
-        const b = buildings.find(x => x.id === saved.id);
-        if (b) {
-            b.owned = saved.owned;
-            b.cost = saved.cost;
-            b.multiplier = saved.multiplier;
-        }
-    });
-
-    data.boosts?.forEach(saved => {
-        const u = boosts.find(x => x.id === saved.id);
-        if (u) {
-            u.bought = saved.bought;
-        }
-    });
-
-    qEssence = data.qEssence ?? 0;
-    data.qUpgrades?.forEach(saved => {
-        const u = qUpgrades.find(x => x.id === saved.id);
-        if (u) u.bought = saved.bought;
-    });
-
-    if (data.archaeotechPermanent) {
-        archaeotechPermanent = {
-            cpsPercent: data.archaeotechPermanent.cpsPercent || 0,
-            clickPercent: data.archaeotechPermanent.clickPercent || 0,
-            goldenDurationPercent: data.archaeotechPermanent.goldenDurationPercent || 0,
-            branchPercent: data.archaeotechPermanent.branchPercent || 0
-        };
-    }
-}
-
-/* MANUAL RESET */
-document.getElementById("reset-btn").onclick = () => {
-    if (confirm("Are you sure you want to reset your progress? (This does NOT reset Q‑Essence or Archaeotech permanent relics.)")) {
-        colonials = 0;
-        buildings.forEach(b => {
-            b.owned = 0;
-            b.cost = b.baseCost;
-            b.multiplier = 1;
-        });
-        boosts.forEach(u => u.bought = false);
-
-        eventMultiplier = 1;
-        goldenCpsMultiplier = 1;
-        wormEventMultiplier = 1;
-        clickEventMultiplier = 1;
-        tempCpsMultiplier = 1;
-        tempClickMultiplier = 1;
-        tempGoldenFreqFactor = 1;
-
-        saveGame();
-        renderBuildings();
-        renderBoosts();
-        updateDisplay();
-    }
-};
-function initGravityNavigation() {
-    console.log("Gravity Navigation initialized");
-    // Physics, levels, larva, hazards, and evolution will be added here
-}
 let larva = null;
-
 let larvaX = 0;
 let larvaY = 0;
 
@@ -1854,8 +1675,24 @@ let thrustLeft = false;
 let thrustRight = false;
 
 let gravityNavRunning = false;
+let currentLevel = 1;
+
+let collectedLumens = 0;
+let collectedNutrients = 0;
+let collectedAncientCells = 0;
+
+let evolution = {
+    stabilityFins: false,
+    pulse: false,
+    shield: false,
+    memory: false
+};
+
+let evolutionPoints = 0;
+let pulseCooldown = false;
+
 document.addEventListener("keydown", e => {
-    if (!gravityNavRunning) return;
+    if (!gravityNavRunning || !larva) return;
 
     if (e.key === "ArrowLeft" || e.key === "a") {
         thrustLeft = true;
@@ -1865,9 +1702,14 @@ document.addEventListener("keydown", e => {
         thrustRight = true;
         larva.classList.add("larva-thrust-right");
     }
+
+    if (e.key === " " && evolution.pulse && !pulseCooldown) {
+        triggerPulse();
+    }
 });
 
 document.addEventListener("keyup", e => {
+    if (!larva) return;
     if (e.key === "ArrowLeft" || e.key === "a") {
         thrustLeft = false;
         larva.classList.remove("larva-thrust-left");
@@ -1879,96 +1721,141 @@ document.addEventListener("keyup", e => {
 });
 
 function updateLarvaPhysics() {
-    if (!gravityNavRunning) return;
+    if (!gravityNavRunning || !larva) return;
 
-    // Gravity
-    velY += GRAVITY;
+    const controlBoost = evolution.stabilityFins ? 1.25 : 1;
+    const effectiveGravity = evolution.memory ? GRAVITY * 0.9 : GRAVITY;
 
-    // Left thrust
+    velY += effectiveGravity;
+
     if (thrustLeft) {
-        velX -= THRUST;
-        velY -= THRUST * 0.2;
+        velX -= THRUST * controlBoost;
+        velY -= THRUST * 0.2 * controlBoost;
     }
-
-    // Right thrust
     if (thrustRight) {
-        velX += THRUST;
-        velY -= THRUST * 0.2;
+        velX += THRUST * controlBoost;
+        velY -= THRUST * 0.2 * controlBoost;
     }
 
-    // Clamp speeds
     velX = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, velX));
     velY = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, velY));
 
-    // Apply movement
     larvaX += velX;
     larvaY += velY;
 
-    // Update position
     larva.style.left = larvaX + "px";
     larva.style.top = larvaY + "px";
 
+    applyMagneticForces();
+    updateSporeVents();
+    updateTendrils();
+    checkNutrientCollection();
+    checkAncientCellCollection();
+    checkLumenCollection();
+    checkWallCollisions(currentLevel);
+    checkLevelCompletion(currentLevel);
+
+    const depthEl = document.getElementById("gravity-depth");
+    if (depthEl) {
+        depthEl.textContent = `Depth: ${Math.floor(larvaY)}m`;
+    }
+
     requestAnimationFrame(updateLarvaPhysics);
 }
-function startGravityLevel(levelNumber) {
-    spawnLarva();
-    gravityNavRunning = true;
-    updateLarvaPhysics(checkWallCollisions(currentLevel);
-);
-}
-{ x: 100, y: 200, width: 80, height: 300 }
+
 const gravityLevels = {
     1: {
         walls: [
-            // Left boundary
             { x: 0, y: 0, width: 40, height: 2000 },
-            // Right boundary
             { x: 360, y: 0, width: 40, height: 2000 },
-
-            // Example interior walls
             { x: 120, y: 300, width: 80, height: 40 },
             { x: 200, y: 600, width: 100, height: 40 },
             { x: 80,  y: 900, width: 60, height: 40 }
         ],
+        magnets: [{ x: 180, y: 500, strength: 0.4 }],
+        vents: [{ x: 80, y: 700, direction: 1 }],
+        tendrils: [{ x: 220, y: 900, sway: 0.015 }],
+        lumens: [
+            { x: 140, y: 300 },
+            { x: 200, y: 600 },
+            { x: 120, y: 900 }
+        ],
+        nutrients: [{ x: 160, y: 450 }],
+        ancient: [],
         exitY: 1800
     },
-
     2: {
         walls: [
             { x: 0, y: 0, width: 40, height: 2200 },
             { x: 360, y: 0, width: 40, height: 2200 },
-
             { x: 140, y: 400, width: 60, height: 40 },
             { x: 220, y: 700, width: 80, height: 40 },
             { x: 100, y: 1100, width: 120, height: 40 },
             { x: 180, y: 1500, width: 80, height: 40 }
         ],
+        magnets: [
+            { x: 150, y: 600, strength: 0.5 },
+            { x: 240, y: 1200, strength: 0.6 }
+        ],
+        vents: [
+            { x: 100, y: 900, direction: 1 },
+            { x: 260, y: 1400, direction: -1 }
+        ],
+        tendrils: [{ x: 180, y: 1100, sway: 0.02 }],
+        lumens: [
+            { x: 140, y: 400 },
+            { x: 220, y: 700 },
+            { x: 100, y: 1100 }
+        ],
+        nutrients: [{ x: 200, y: 800 }],
+        ancient: [{ x: 180, y: 1500 }],
         exitY: 2000
     },
-
     3: {
         walls: [
             { x: 0, y: 0, width: 40, height: 2500 },
             { x: 360, y: 0, width: 40, height: 2500 },
-
             { x: 160, y: 300, width: 80, height: 40 },
             { x: 80,  y: 700, width: 60, height: 40 },
             { x: 220, y: 1100, width: 100, height: 40 },
             { x: 140, y: 1500, width: 80, height: 40 },
             { x: 100, y: 1900, width: 120, height: 40 }
         ],
+        magnets: [
+            { x: 160, y: 500, strength: 0.6 },
+            { x: 240, y: 1300, strength: 0.7 }
+        ],
+        vents: [
+            { x: 80, y: 700, direction: 1 },
+            { x: 260, y: 1100, direction: -1 },
+            { x: 140, y: 1600, direction: 1 }
+        ],
+        tendrils: [
+            { x: 200, y: 900, sway: 0.025 },
+            { x: 120, y: 1400, sway: 0.02 }
+        ],
+        lumens: [
+            { x: 160, y: 300 },
+            { x: 80, y: 700 },
+            { x: 220, y: 1100 },
+            { x: 140, y: 1500 }
+        ],
+        nutrients: [{ x: 200, y: 1000 }],
+        ancient: [{ x: 100, y: 1900 }],
         exitY: 2300
     }
 };
+
 function renderLevelWalls(levelNumber) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return;
 
-    // Clear old walls
     viewport.querySelectorAll(".cavern-wall").forEach(w => w.remove());
 
-    const walls = gravityLevels[levelNumber].walls;
+    const level = gravityLevels[levelNumber];
+    if (!level) return;
 
-    walls.forEach(w => {
+    level.walls.forEach(w => {
         const wall = document.createElement("div");
         wall.classList.add("cavern-wall");
         wall.style.left = w.x + "px";
@@ -1978,8 +1865,72 @@ function renderLevelWalls(levelNumber) {
         viewport.appendChild(wall);
     });
 }
+
+function spawnLarva() {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return;
+
+    if (larva && larva.parentElement) larva.remove();
+
+    larva = document.createElement("div");
+    larva.classList.add("larva");
+
+    larvaX = viewport.clientWidth / 2;
+    larvaY = 40;
+    velX = 0;
+    velY = 0;
+
+    larva.style.left = larvaX + "px";
+    larva.style.top = larvaY + "px";
+
+    viewport.appendChild(larva);
+}
+
+function renderLevel(levelNumber) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return;
+
+    viewport.innerHTML = "";
+
+    const level = gravityLevels[levelNumber];
+
+    renderLevelWalls(levelNumber);
+
+    level.magnets.forEach(m => spawnMagnet(m.x, m.y, m.strength));
+    level.vents.forEach(v => spawnSporeVent(v.x, v.y, v.direction));
+    level.tendrils.forEach(t => spawnTendril(t.x, t.y, t.sway));
+    level.lumens.forEach(l => spawnLumen(l.x, l.y));
+    level.nutrients.forEach(n => spawnNutrient(n.x, n.y));
+    level.ancient.forEach(a => spawnAncientCell(a.x, a.y));
+
+    spawnExitPlatform(level.exitY);
+}
+
+function spawnExitPlatform(y) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return;
+
+    const exit = document.createElement("div");
+    exit.classList.add("exit-platform");
+    exit.style.left = "100px";
+    exit.style.top = y + "px";
+
+    viewport.appendChild(exit);
+}
+
+function checkLevelCompletion(levelNumber) {
+    const exitY = gravityLevels[levelNumber].exitY;
+
+    if (larvaY > exitY - 40 && larvaY < exitY + 40) {
+        completeLevel(levelNumber);
+    }
+}
+
 function checkWallCollisions(levelNumber) {
-    const walls = gravityLevels[levelNumber].walls;
+    const level = gravityLevels[levelNumber];
+    if (!level || !larva) return;
+
+    const walls = level.walls;
 
     const larvaRect = {
         x: larvaX,
@@ -1995,39 +1946,58 @@ function checkWallCollisions(levelNumber) {
             larvaRect.y < w.y + w.height &&
             larvaRect.y + larvaRect.height > w.y
         ) {
-            // Collision detected
             handleLarvaCollision();
             return;
         }
     }
 }
+
 function handleLarvaCollision() {
+    if (!larva) return;
+
     larva.classList.add("larva-hit");
+    setTimeout(() => larva && larva.classList.remove("larva-hit"), 200);
 
-    // Remove flash after animation
-    setTimeout(() => larva.classList.remove("larva-hit"), 200);
+    const impact = Math.abs(velX) + Math.abs(velY);
 
-    // If speed is too high → death
-    if (Math.abs(velX) + Math.abs(velY) > 6) {
+    if (impact > 6) {
+        if (evolution.shield) {
+            evolution.shield = false;
+            updateEvolutionDisplay();
+
+            larva.style.filter = "brightness(3)";
+            setTimeout(() => {
+                if (larva) larva.style.filter = "brightness(1)";
+            }, 200);
+
+            velX *= -0.3;
+            velY *= -0.3;
+            return;
+        }
+
         killLarva();
     } else {
-        // Soft bounce
         velX *= -0.4;
         velY *= -0.4;
     }
 }
+
 function killLarva() {
     gravityNavRunning = false;
+    if (!larva) return;
 
     larva.style.transition = "opacity 0.4s";
     larva.style.opacity = "0";
 
     setTimeout(() => {
-        larva.remove();
+        if (larva && larva.parentElement) larva.remove();
+        larva = null;
     }, 400);
 }
+
 function spawnMagnet(x, y, strength = 0.4) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const m = document.createElement("div");
     m.classList.add("magnet-crystal");
@@ -2040,6 +2010,8 @@ function spawnMagnet(x, y, strength = 0.4) {
 }
 
 function applyMagneticForces() {
+    if (!larva) return;
+
     const magnets = document.querySelectorAll(".magnet-crystal");
 
     magnets.forEach(m => {
@@ -2049,17 +2021,18 @@ function applyMagneticForces() {
         const dx = mx - larvaX;
         const dy = my - larvaY;
 
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 200) {
-            const force = m.dataset.strength / dist;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 200 && dist > 1) {
+            const force = parseFloat(m.dataset.strength) / dist;
             velX += dx * force;
             velY += dy * force;
         }
     });
 }
-applyMagneticForces();
+
 function spawnSporeVent(x, y, direction = 1) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const vent = document.createElement("div");
     vent.classList.add("spore-vent");
@@ -2070,7 +2043,11 @@ function spawnSporeVent(x, y, direction = 1) {
     viewport.appendChild(vent);
     return vent;
 }
+
 function updateSporeVents() {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport || !larva) return;
+
     const vents = document.querySelectorAll(".spore-vent");
 
     vents.forEach(v => {
@@ -2087,9 +2064,8 @@ function updateSporeVents() {
             const dir = parseInt(v.dataset.direction);
             const push = dir * 0.6;
 
-            document.getElementById("gravity-cavern-viewport").appendChild(cloud);
+            viewport.appendChild(cloud);
 
-            // Apply force if larva is inside cloud
             const interval = setInterval(() => {
                 const cx = parseFloat(cloud.style.left);
                 cloud.style.left = (cx + dir * 2) + "px";
@@ -2111,9 +2087,10 @@ function updateSporeVents() {
         }
     });
 }
-updateSporeVents();
+
 function spawnTendril(x, y, swaySpeed = 0.02) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const t = document.createElement("div");
     t.classList.add("tendril");
@@ -2125,7 +2102,10 @@ function spawnTendril(x, y, swaySpeed = 0.02) {
     viewport.appendChild(t);
     return t;
 }
+
 function updateTendrils() {
+    if (!larva) return;
+
     const tendrils = document.querySelectorAll(".tendril");
 
     tendrils.forEach(t => {
@@ -2138,7 +2118,6 @@ function updateTendrils() {
         const rot = Math.sin(angle) * 25;
         t.style.transform = `rotate(${rot}deg)`;
 
-        // Collision check
         const tx = parseFloat(t.style.left);
         const ty = parseFloat(t.style.top);
 
@@ -2152,9 +2131,10 @@ function updateTendrils() {
         }
     });
 }
-updateTendrils();
+
 function spawnNutrient(x, y) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const n = document.createElement("div");
     n.classList.add("nutrient");
@@ -2164,7 +2144,10 @@ function spawnNutrient(x, y) {
     viewport.appendChild(n);
     return n;
 }
+
 function checkNutrientCollection() {
+    if (!larva) return;
+
     const nutrients = document.querySelectorAll(".nutrient");
 
     nutrients.forEach(n => {
@@ -2180,14 +2163,15 @@ function checkNutrientCollection() {
             n.remove();
             collectedNutrients++;
 
-            // Temporary buff: slight control boost
             velX *= 0.8;
             velY *= 0.8;
         }
     });
 }
+
 function spawnAncientCell(x, y) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const a = document.createElement("div");
     a.classList.add("ancient-cell");
@@ -2197,7 +2181,10 @@ function spawnAncientCell(x, y) {
     viewport.appendChild(a);
     return a;
 }
+
 function checkAncientCellCollection() {
+    if (!larva) return;
+
     const cells = document.querySelectorAll(".ancient-cell");
 
     cells.forEach(c => {
@@ -2212,13 +2199,17 @@ function checkAncientCellCollection() {
         ) {
             c.remove();
             collectedAncientCells++;
+
+            const gain = 1 + Math.floor(Math.random() * 2);
+            qEssence += gain;
+            updateDisplay();
         }
     });
 }
-checkAncientCellCollection();
-checkNutrientCollection();
+
 function spawnLumen(x, y) {
     const viewport = document.getElementById("gravity-cavern-viewport");
+    if (!viewport) return null;
 
     const l = document.createElement("div");
     l.classList.add("lumen");
@@ -2228,7 +2219,10 @@ function spawnLumen(x, y) {
     viewport.appendChild(l);
     return l;
 }
+
 function checkLumenCollection() {
+    if (!larva) return;
+
     const lumens = document.querySelectorAll(".lumen");
 
     lumens.forEach(l => {
@@ -2246,342 +2240,38 @@ function checkLumenCollection() {
         }
     });
 }
-checkLumenCollection();
-const gravityLevels = {
-    1: {
-        walls: [ /* already defined */ ],
-        magnets: [
-            { x: 180, y: 500, strength: 0.4 }
-        ],
-        vents: [
-            { x: 80, y: 700, direction: 1 }
-        ],
-        tendrils: [
-            { x: 220, y: 900, sway: 0.015 }
-        ],
-        lumens: [
-            { x: 140, y: 300 },
-            { x: 200, y: 600 },
-            { x: 120, y: 900 }
-        ],
-        nutrients: [
-            { x: 160, y: 450 }
-        ],
-        ancient: [],
-        exitY: 1800
-    },
 
-    2: {
-        walls: [ /* already defined */ ],
-        magnets: [
-            { x: 150, y: 600, strength: 0.5 },
-            { x: 240, y: 1200, strength: 0.6 }
-        ],
-        vents: [
-            { x: 100, y: 900, direction: 1 },
-            { x: 260, y: 1400, direction: -1 }
-        ],
-        tendrils: [
-            { x: 180, y: 1100, sway: 0.02 }
-        ],
-        lumens: [
-            { x: 140, y: 400 },
-            { x: 220, y: 700 },
-            { x: 100, y: 1100 }
-        ],
-        nutrients: [
-            { x: 200, y: 800 }
-        ],
-        ancient: [
-            { x: 180, y: 1500 }
-        ],
-        exitY: 2000
-    },
-
-    3: {
-        walls: [ /* already defined */ ],
-        magnets: [
-            { x: 160, y: 500, strength: 0.6 },
-            { x: 240, y: 1300, strength: 0.7 }
-        ],
-        vents: [
-            { x: 80, y: 700, direction: 1 },
-            { x: 260, y: 1100, direction: -1 },
-            { x: 140, y: 1600, direction: 1 }
-        ],
-        tendrils: [
-            { x: 200, y: 900, sway: 0.025 },
-            { x: 120, y: 1400, sway: 0.02 }
-        ],
-        lumens: [
-            { x: 160, y: 300 },
-            { x: 80, y: 700 },
-            { x: 220, y: 1100 },
-            { x: 140, y: 1500 }
-        ],
-        nutrients: [
-            { x: 200, y: 1000 }
-        ],
-        ancient: [
-            { x: 100, y: 1900 }
-        ],
-        exitY: 2300
-    }
-};
-
-function renderLevel(levelNumber) {
-    const level = gravityLevels[levelNumber];
-    const viewport = document.getElementById("gravity-cavern-viewport");
-
-    // Clear old elements
-    viewport.innerHTML = "";
-
-    // Walls
-    renderLevelWalls(levelNumber);
-
-    // Magnets
-    level.magnets.forEach(m => spawnMagnet(m.x, m.y, m.strength));
-
-    // Spore vents
-    level.vents.forEach(v => spawnSporeVent(v.x, v.y, v.direction));
-
-    // Tendrils
-    level.tendrils.forEach(t => spawnTendril(t.x, t.y, t.sway));
-
-    // Lumens
-    level.lumens.forEach(l => spawnLumen(l.x, l.y));
-
-    // Nutrients
-    level.nutrients.forEach(n => spawnNutrient(n.x, n.y));
-
-    // Ancient cells
-    level.ancient.forEach(a => spawnAncientCell(a.x, a.y));
-
-    // Exit platform
-    spawnExitPlatform(level.exitY);
-}
-function spawnExitPlatform(y) {
-    const viewport = document.getElementById("gravity-cavern-viewport");
-
-    const exit = document.createElement("div");
-    exit.classList.add("exit-platform");
-    exit.style.left = "100px";
-    exit.style.top = y + "px";
-
-    viewport.appendChild(exit);
-}
-function checkLevelCompletion(levelNumber) {
-    const exitY = gravityLevels[levelNumber].exitY;
-
-    if (larvaY > exitY - 40 && larvaY < exitY + 40) {
-        completeLevel(levelNumber);
-    }
-}
-checkLevelCompletion(currentLevel);
-function completeLevel(levelNumber) {
-    gravityNavRunning = false;
-
-    // Fade out larva
-    larva.style.transition = "opacity 0.4s";
-    larva.style.opacity = "0";
-
-    setTimeout(() => {
-        larva.remove();
-    }, 400);
-
-    // Rewards
-    let reward = 0;
-    if (levelNumber === 1) reward = 1;
-    if (levelNumber === 2) reward = 2;
-    if (levelNumber === 3) reward = 3;
-
-    evolutionPoints += reward;
-    updateEvolutionDisplay();
-
-    alert(`Level ${levelNumber} complete! Evolution +${reward}`);
-}
-document.querySelectorAll(".gn-level-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const level = parseInt(btn.dataset.level);
-        startGravityLevel(level);
-    });
-});
-let currentLevel = 1;
-
-function startGravityLevel(levelNumber) {
-    currentLevel = levelNumber;
-
-    collectedLumens = 0;
-    collectedNutrients = 0;
-    collectedAncientCells = 0;
-
-    renderLevel(levelNumber);
-    spawnLarva();
-
-    gravityNavRunning = true;
-    updateLarvaPhysics();
-}
-let evolution = {
-    stabilityFins: false,
-    pulse: false,
-    shield: false,
-    memory: false
-};
-
-let evolutionPoints = 0;
-function updateEvolutionDisplay() {
-    const box = document.getElementById("gravity-evolution-display");
-
-    box.innerHTML = `
-        <h3>Evolution</h3>
-        <p>Points: ${evolutionPoints}</p>
-        <ul>
-            <li>Stability Fins: ${evolution.stabilityFins ? "✓" : "—"}</li>
-            <li>Bioluminescent Pulse: ${evolution.pulse ? "✓" : "—"}</li>
-            <li>Spore Shield: ${evolution.shield ? "✓" : "—"}</li>
-            <li>Mycelial Memory: ${evolution.memory ? "✓" : "—"}</li>
-        </ul>
-    `;
-}
-updateEvolutionDisplay();
-function completeLevel(levelNumber) {
-    gravityNavRunning = false;
-
-    larva.style.transition = "opacity 0.4s";
-    larva.style.opacity = "0";
-
-    setTimeout(() => larva.remove(), 400);
-
-    if (levelNumber === 1) {
-        evolution.stabilityFins = true;
-        evolutionPoints += 1;
-    }
-
-    if (levelNumber === 2) {
-        evolution.pulse = true;
-        evolutionPoints += 2;
-    }
-
-    if (levelNumber === 3) {
-        evolution.shield = true;
-        evolution.memory = true;
-        evolutionPoints += 3;
-    }
-
-    updateEvolutionDisplay();
-
-    alert(`Level ${levelNumber} complete! Evolution unlocked.`);
-}
-let controlBoost = evolution.stabilityFins ? 1.25 : 1;
-
-if (thrustLeft) {
-    velX -= THRUST * controlBoost;
-    velY -= THRUST * 0.2 * controlBoost;
-}
-
-if (thrustRight) {
-    velX += THRUST * controlBoost;
-    velY -= THRUST * 0.2 * controlBoost;
-}
-let pulseCooldown = false;
-
-document.addEventListener("keydown", e => {
-    if (e.key === " " && evolution.pulse && !pulseCooldown) {
-        triggerPulse();
-    }
-});
 function triggerPulse() {
+    if (!larva) return;
     pulseCooldown = true;
 
     larva.classList.add("larva-pulse");
 
-    // Reveal hazards
     document.querySelectorAll(".magnet-crystal, .spore-vent, .tendril")
         .forEach(h => h.style.opacity = "1");
 
     setTimeout(() => {
-        larva.classList.remove("larva-pulse");
+        if (larva) larva.classList.remove("larva-pulse");
 
-        // Fade hazards back
         document.querySelectorAll(".magnet-crystal, .spore-vent, .tendril")
             .forEach(h => h.style.opacity = "0.5");
 
         pulseCooldown = false;
     }, 800);
 }
-function handleLarvaCollision() {
-    larva.classList.add("larva-hit");
-    setTimeout(() => larva.classList.remove("larva-hit"), 200);
 
-    const impact = Math.abs(velX) + Math.abs(velY);
-
-    if (impact > 6) {
-        if (evolution.shield) {
-            evolution.shield = false;
-            updateEvolutionDisplay();
-
-            // Shield break flash
-            larva.style.filter = "brightness(3)";
-            setTimeout(() => larva.style.filter = "brightness(1)", 200);
-
-            velX *= -0.3;
-            velY *= -0.3;
-            return;
-        }
-
-        killLarva();
-    } else {
-        velX *= -0.4;
-        velY *= -0.4;
-    }
-}
-const effectiveGravity = evolution.memory ? GRAVITY * 0.9 : GRAVITY;
-velY += effectiveGravity;
-let gravitySave = {
-    evolution: {
-        stabilityFins: false,
-        pulse: false,
-        shield: false,
-        memory: false
-    },
-    evolutionPoints: 0,
-    completedLevels: {
-        1: false,
-        2: false,
-        3: false
-    }
-};
-function loadGravitySave() {
-    const data = localStorage.getItem("gravityNavSave");
-    if (data) {
-        gravitySave = JSON.parse(data);
-
-        evolution = gravitySave.evolution;
-        evolutionPoints = gravitySave.evolutionPoints;
-
-        updateEvolutionDisplay();
-        updateLevelButtons();
-    }
-}
-loadGravitySave();
-function saveGravityNav() {
-    gravitySave.evolution = evolution;
-    gravitySave.evolutionPoints = evolutionPoints;
-
-    localStorage.setItem("gravityNavSave", JSON.stringify(gravitySave));
-}
 function completeLevel(levelNumber) {
     gravityNavRunning = false;
 
-    larva.style.transition = "opacity 0.4s";
-    larva.style.opacity = "0";
+    if (larva) {
+        larva.style.transition = "opacity 0.4s";
+        larva.style.opacity = "0";
+        setTimeout(() => {
+            if (larva && larva.parentElement) larva.remove();
+            larva = null;
+        }, 400);
+    }
 
-    setTimeout(() => larva.remove(), 400);
-
-    // Mark level complete
-    gravitySave.completedLevels[levelNumber] = true;
-
-    // Unlock evolution traits
     if (levelNumber === 1) {
         evolution.stabilityFins = true;
         evolutionPoints += 1;
@@ -2600,10 +2290,41 @@ function completeLevel(levelNumber) {
 
     updateEvolutionDisplay();
     updateLevelButtons();
-    saveGravityNav();
+    saveGame();
 
     alert(`Level ${levelNumber} complete! Evolution unlocked.`);
 }
+
+function startGravityLevel(levelNumber) {
+    currentLevel = levelNumber;
+
+    collectedLumens = 0;
+    collectedNutrients = 0;
+    collectedAncientCells = 0;
+
+    renderLevel(levelNumber);
+    spawnLarva();
+
+    gravityNavRunning = true;
+    requestAnimationFrame(updateLarvaPhysics);
+}
+
+function updateEvolutionDisplay() {
+    const box = document.getElementById("gravity-evolution-display");
+    if (!box) return;
+
+    box.innerHTML = `
+        <h3>Evolution</h3>
+        <p>Points: ${evolutionPoints}</p>
+        <ul>
+            <li>Stability Fins: ${evolution.stabilityFins ? "✓" : "—"}</li>
+            <li>Bioluminescent Pulse: ${evolution.pulse ? "✓" : "—"}</li>
+            <li>Spore Shield: ${evolution.shield ? "✓" : "—"}</li>
+            <li>Mycelial Memory: ${evolution.memory ? "✓" : "—"}</li>
+        </ul>
+    `;
+}
+
 function updateLevelButtons() {
     const buttons = document.querySelectorAll(".gn-level-btn");
 
@@ -2613,51 +2334,167 @@ function updateLevelButtons() {
         if (level === 1) {
             btn.disabled = false;
         } else if (level === 2) {
-            btn.disabled = !gravitySave.completedLevels[1];
+            btn.disabled = !(evolution.stabilityFins);
         } else if (level === 3) {
-            btn.disabled = !gravitySave.completedLevels[2];
+            btn.disabled = !(evolution.pulse);
         }
     });
 }
-saveGravityNav();
-document.getElementById("gravity-reset-save").addEventListener("click", () => {
-    if (confirm("Reset all Gravity Navigation progress?")) {
-        localStorage.removeItem("gravityNavSave");
-        location.reload();
-    }
+
+document.querySelectorAll(".gn-level-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const level = parseInt(btn.dataset.level);
+        startGravityLevel(level);
+    });
 });
 
-const glow = document.createElement("div");
-glow.classList.add("cavern-glow");
-viewport.appendChild(glow);
-const rot = Math.sin(angle) * 35;
-document.getElementById("gravity-depth").textContent =
-    `Depth: ${Math.floor(larvaY)}m`;
-
-/* INITIALIZE */
-loadGame();
-renderBuildings();
-renderBoosts();
-updateDisplay();
-renderQTree();
-scheduleGoldenEvents();
-initWormWeb();
-initGravityNavigation(function spawnLarva() {
-    const viewport = document.getElementById("gravity-cavern-viewport");
-
-    // Remove old larva if present
-    if (larva) larva.remove();
-
-    larva = document.createElement("div");
-    larva.id = "larva";
-    viewport.appendChild(larva);
-
-    // Starting position
-    larvaX = viewport.clientWidth / 2;
-    larvaY = 40;
-
-    velX = 0;
-    velY = 0;
+const gravityResetBtn = document.getElementById("gravity-reset-save");
+if (gravityResetBtn) {
+    gravityResetBtn.addEventListener("click", () => {
+        if (confirm("Reset all Gravity Navigation progress?")) {
+            evolution = {
+                stabilityFins: false,
+                pulse: false,
+                shield: false,
+                memory: false
+            };
+            evolutionPoints = 0;
+            saveGame();
+            updateEvolutionDisplay();
+            updateLevelButtons();
+        }
+    });
 }
-);
-initArchaeotechLab();
+
+/* ============================
+      SAVE / LOAD SYSTEM
+============================ */
+
+function saveGame() {
+    const saveData = {
+        colonials,
+        buildings: buildings.map(b => ({
+            id: b.id,
+            owned: b.owned,
+            cost: b.cost,
+            multiplier: b.multiplier
+        })),
+        boosts: boosts.map(u => ({
+            id: u.id,
+            bought: u.bought
+        })),
+        qEssence,
+        qUpgrades: qUpgrades.map(u => ({
+            id: u.id,
+            bought: u.bought
+        })),
+        archaeotechPermanent,
+        burrow: saveBurrowData(),
+        gravityNav: {
+            evolution,
+            evolutionPoints
+        }
+    };
+
+    localStorage.setItem("colonialClickerSave", JSON.stringify(saveData));
+}
+
+function loadGame() {
+    const raw = localStorage.getItem("colonialClickerSave");
+    if (!raw) return;
+
+    try {
+        const data = JSON.parse(raw);
+
+        colonials = data.colonials ?? 0;
+
+        data.buildings?.forEach(saved => {
+            const b = buildings.find(x => x.id === saved.id);
+            if (b) {
+                b.owned = saved.owned;
+                b.cost = saved.cost;
+                b.multiplier = saved.multiplier;
+            }
+        });
+
+        data.boosts?.forEach(saved => {
+            const u = boosts.find(x => x.id === saved.id);
+            if (u) u.bought = saved.bought;
+        });
+
+        qEssence = data.qEssence ?? 0;
+        data.qUpgrades?.forEach(saved => {
+            const u = qUpgrades.find(x => x.id === saved.id);
+            if (u) u.bought = saved.bought;
+        });
+
+        if (data.archaeotechPermanent) {
+            archaeotechPermanent = {
+                cpsPercent: data.archaeotechPermanent.cpsPercent || 0,
+                clickPercent: data.archaeotechPermanent.clickPercent || 0,
+                goldenDurationPercent: data.archaeotechPermanent.goldenDurationPercent || 0,
+                branchPercent: data.archaeotechPermanent.branchPercent || 0
+            };
+        }
+
+        if (data.burrow) {
+            loadBurrowData(data.burrow);
+        }
+
+        if (data.gravityNav) {
+            evolution = data.gravityNav.evolution || evolution;
+            evolutionPoints = data.gravityNav.evolutionPoints || 0;
+        }
+
+    } catch (e) {
+        console.error("Save file corrupted:", e);
+    }
+}
+
+/* MANUAL RESET */
+const resetBtn = document.getElementById("reset-btn");
+if (resetBtn) {
+    resetBtn.onclick = () => {
+        if (confirm("Are you sure you want to reset your progress? (This does NOT reset Q‑Essence or Archaeotech permanent relics.)")) {
+            colonials = 0;
+            buildings.forEach(b => {
+                b.owned = 0;
+                b.cost = b.baseCost;
+                b.multiplier = 1;
+            });
+            boosts.forEach(u => u.bought = false);
+
+            eventMultiplier = 1;
+            goldenCpsMultiplier = 1;
+            wormEventMultiplier = 1;
+            clickEventMultiplier = 1;
+            tempCpsMultiplier = 1;
+            tempClickMultiplier = 1;
+            tempGoldenFreqFactor = 1;
+
+            saveGame();
+            renderBuildings();
+            renderBoosts();
+            updateDisplay();
+        }
+    };
+}
+
+/* ============================
+      GAME INITIALIZATION
+============================ */
+
+function initGame() {
+    loadGame();
+    renderBuildings();
+    renderBoosts();
+    updateDisplay();
+    renderQTree();
+    scheduleGoldenEvents();
+    initWormWeb();
+    initBurrowNetwork();
+    updateEvolutionDisplay();
+    updateLevelButtons();
+}
+
+window.onload = initGame;
