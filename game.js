@@ -11,19 +11,41 @@ let goldenCpsMultiplier = 1;      // Golden events CPS
 let wormEventMultiplier = 1;      // Wormquake
 let clickEventMultiplier = 1;     // Ophidian Blessing
 
+/* Q‑Essence / Q‑Tree */
+let qEssence = 0;
+const qUpgrades = [
+    { id: "q_crit",   name: "Quantum Probability", desc: "+5% crit chance",      cost: 5,  bought: false },
+    { id: "q_cps",    name: "Gravitic Overcharge", desc: "+10% global CPS",      cost: 5,  bought: false },
+    { id: "q_snake",  name: "Serpent Dominion",    desc: "+1% CPS per Snake",    cost: 8,  bought: false },
+    { id: "q_worm",   name: "Worm Hive Memory",    desc: "Worms start stronger", cost: 8,  bought: false },
+    { id: "q_golden", name: "Cosmic Lure",         desc: "+20% golden events",   cost: 10, bought: false },
+    { id: "q_click",  name: "Ascended Touch",      desc: "+200% click power",    cost: 10, bought: false },
+];
+
+function isQBought(id) {
+    const u = qUpgrades.find(x => x.id === id);
+    return u && u.bought;
+}
+
 /* CLICK HANDLER WITH SPECIAL ABILITIES */
 colonialImg.onclick = (event) => {
     let gain = clickPower * clickEventMultiplier;
     let isCrit = false;
 
-    // Quantum Pilgrims: 10% chance for 10x click
+    // Quantum Pilgrims: 10% chance for 10x click (+5% if Q_crit)
     const quantum = getBuilding("quantum");
+    let critChance = 0.10;
+    if (isQBought("q_crit")) critChance += 0.05;
+
     if (quantum && quantum.owned > 0) {
-        if (Math.random() < 0.10) {
+        if (Math.random() < critChance) {
             gain *= 10;
             isCrit = true;
         }
     }
+
+    // Ascended Touch
+    if (isQBought("q_click")) gain *= 3;
 
     // Psionic Ophidians: extra CPS-based click gain (1x CPS)
     const psionic = getBuilding("psionic");
@@ -415,6 +437,20 @@ function getTotalCps() {
     const imperial = getBuilding("imperial");
     imperialBonusMultiplier = imperial ? (1 + 0.05 * imperial.owned) : 1;
 
+    let qCpsBonus = 1;
+    let snakeBonus = 1;
+
+    // Gravitic Overcharge
+    if (isQBought("q_cps")) qCpsBonus *= 1.10;
+
+    // Serpent Dominion
+    if (isQBought("q_snake")) {
+        const snakeOwned = buildings
+            .filter(b => b.branch === "snake")
+            .reduce((s, b) => s + b.owned, 0);
+        snakeBonus *= 1 + 0.01 * snakeOwned;
+    }
+
     buildings.forEach(b => {
         if (b.owned > 0) {
             let branchMult = 1;
@@ -424,7 +460,7 @@ function getTotalCps() {
         }
     });
 
-    total = Math.floor(total * imperialBonusMultiplier * eventMultiplier * goldenCpsMultiplier);
+    total = Math.floor(total * imperialBonusMultiplier * eventMultiplier * goldenCpsMultiplier * qCpsBonus * snakeBonus);
     return total;
 }
 
@@ -658,11 +694,142 @@ function qGlimpse() {
 
 /* Schedule golden events every 60–120s */
 function scheduleGoldenEvents() {
-    const delay = 60000 + Math.random() * 60000;
+    let base = 60000 + Math.random() * 60000;
+    if (isQBought("q_golden")) base *= 0.8; // +20% frequency
     setTimeout(() => {
         spawnGoldenEvent();
         scheduleGoldenEvents();
-    }, delay);
+    }, base);
+}
+
+/* ============================
+      Q‑TREE / PRESTIGE
+============================ */
+
+function getTotalColonialsForPrestige() {
+    // Simple log-based formula
+    return Math.floor(Math.log10(Math.max(colonials, 1)));
+}
+
+function ascend() {
+    const gained = getTotalColonialsForPrestige();
+    if (gained <= 0) {
+        alert("You need more Colonials before ascending.");
+        return;
+    }
+
+    if (!confirm(`Ascend and gain ${gained} Q‑Essence? This resets your run.`)) return;
+
+    qEssence += gained;
+
+    // Reset run state
+    colonials = 0;
+    buildings.forEach(b => {
+        b.owned = 0;
+        b.cost = b.baseCost;
+        b.multiplier = 1;
+    });
+    boosts.forEach(u => u.bought = false);
+
+    // Clear temporary multipliers
+    eventMultiplier = 1;
+    goldenCpsMultiplier = 1;
+    wormEventMultiplier = 1;
+    clickEventMultiplier = 1;
+
+    saveGame();
+    renderBuildings();
+    renderBoosts();
+    updateDisplay();
+    renderQTree();
+}
+
+function renderQTree() {
+    const circle = document.getElementById("qtree-circle");
+    const display = document.getElementById("q-essence-display");
+    if (!circle) return;
+
+    display.innerText = `Q‑Essence: ${qEssence}`;
+
+    circle.innerHTML = "";
+    const radius = 110;
+    const center = 130;
+    const n = qUpgrades.length;
+
+    qUpgrades.forEach((u, i) => {
+        const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+        const x = center + radius * Math.cos(angle) - 23;
+        const y = center + radius * Math.sin(angle) - 23;
+
+        const node = document.createElement("div");
+        node.className = "q-node";
+        if (u.bought) node.classList.add("bought");
+        if (!u.bought && u.cost > qEssence) node.classList.add("locked");
+
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+        node.title = `${u.name}\n${u.desc}\nCost: ${u.cost} Q‑Essence`;
+        node.innerText = u.name.split(" ")[0];
+
+        node.onclick = () => {
+            if (u.bought) return;
+            if (qEssence < u.cost) {
+                alert("Not enough Q‑Essence.");
+                return;
+            }
+            qEssence -= u.cost;
+            u.bought = true;
+            saveGame();
+            renderQTree();
+            updateDisplay();
+        };
+
+        circle.appendChild(node);
+    });
+}
+
+/* ============================
+      MINIGAME PANELS (PLACEHOLDERS)
+============================ */
+
+const miniPanel = document.getElementById("minigame-panel");
+const miniTitle = document.getElementById("minigame-title");
+const miniContent = document.getElementById("minigame-content");
+const qPanel = document.getElementById("qtree-panel");
+
+document.getElementById("btn-archaeotech").onclick = () =>
+    openMinigame("Archaeotech Lab",
+        "Combine ancient relics to unlock permanent buffs. (Minigame placeholder — you can expand this later.)");
+
+document.getElementById("btn-gravity").onclick = () =>
+    openMinigame("Gravity Navigation",
+        "Steer gravity waves to hit targets and gain temporary CPS boosts. (Placeholder.)");
+
+document.getElementById("btn-burrow").onclick = () =>
+    openMinigame("Burrow Network",
+        "Connect tunnels between nodes to boost Worm branch production. (Placeholder.)");
+
+document.getElementById("btn-neural").onclick = () =>
+    openMinigame("Neural Web",
+        "Link neurons into circuits for psionic bonuses. (Placeholder.)");
+
+document.getElementById("btn-qtree").onclick = () => {
+    qPanel.classList.remove("hidden");
+    renderQTree();
+};
+
+document.getElementById("close-minigame").onclick = () =>
+    miniPanel.classList.add("hidden");
+
+document.getElementById("close-qtree").onclick = () =>
+    qPanel.classList.add("hidden");
+
+document.getElementById("ascend-btn").onclick = ascend;
+
+function openMinigame(title, text) {
+    miniTitle.innerText = title;
+    miniContent.innerHTML = `<p>${text}</p>`;
+    miniPanel.classList.remove("hidden");
 }
 
 /* ============================
@@ -679,6 +846,11 @@ function saveGame() {
             multiplier: b.multiplier
         })),
         boosts: boosts.map(u => ({
+            id: u.id,
+            bought: u.bought
+        })),
+        qEssence: qEssence,
+        qUpgrades: qUpgrades.map(u => ({
             id: u.id,
             bought: u.bought
         }))
@@ -710,13 +882,34 @@ function loadGame() {
             u.bought = saved.bought;
         }
     });
+
+    qEssence = data.qEssence ?? 0;
+    data.qUpgrades?.forEach(saved => {
+        const u = qUpgrades.find(x => x.id === saved.id);
+        if (u) u.bought = saved.bought;
+    });
 }
 
 /* MANUAL RESET */
 document.getElementById("reset-btn").onclick = () => {
-    if (confirm("Are you sure you want to reset your progress?")) {
-        localStorage.removeItem("colonialClickerSave");
-        location.reload();
+    if (confirm("Are you sure you want to reset your progress? (This does NOT reset Q‑Essence.)")) {
+        colonials = 0;
+        buildings.forEach(b => {
+            b.owned = 0;
+            b.cost = b.baseCost;
+            b.multiplier = 1;
+        });
+        boosts.forEach(u => u.bought = false);
+
+        eventMultiplier = 1;
+        goldenCpsMultiplier = 1;
+        wormEventMultiplier = 1;
+        clickEventMultiplier = 1;
+
+        saveGame();
+        renderBuildings();
+        renderBoosts();
+        updateDisplay();
     }
 };
 
@@ -725,4 +918,5 @@ loadGame();
 renderBuildings();
 renderBoosts();
 updateDisplay();
+renderQTree();
 scheduleGoldenEvents();
