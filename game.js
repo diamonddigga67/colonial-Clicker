@@ -7,16 +7,21 @@ const colonialImg = document.getElementById("colonial-img");
 let eventMultiplier = 1;          // Planet-Eaters burst
 let imperialBonusMultiplier = 1;  // Imperial Serpents
 let wormBranchMultiplier = 1;     // Subterranean Empires
+let goldenCpsMultiplier = 1;      // Golden events CPS
+let wormEventMultiplier = 1;      // Wormquake
+let clickEventMultiplier = 1;     // Ophidian Blessing
 
 /* CLICK HANDLER WITH SPECIAL ABILITIES */
 colonialImg.onclick = (event) => {
-    let gain = clickPower;
+    let gain = clickPower * clickEventMultiplier;
+    let isCrit = false;
 
     // Quantum Pilgrims: 10% chance for 10x click
     const quantum = getBuilding("quantum");
     if (quantum && quantum.owned > 0) {
         if (Math.random() < 0.10) {
             gain *= 10;
+            isCrit = true;
         }
     }
 
@@ -28,19 +33,24 @@ colonialImg.onclick = (event) => {
 
     colonials += gain;
     updateDisplay();
-    spawnFloat(event, gain);
+    spawnFloat(event, gain, isCrit);
 };
 
 /* FLOATING TEXT */
-function spawnFloat(event, amount) {
+function spawnFloat(event, amount, isCrit) {
     const container = document.getElementById("float-container");
     const float = document.createElement("div");
     float.className = "float";
-    float.innerText = `+${amount}`;
+    if (isCrit) float.classList.add("crit");
+
+    float.innerText = isCrit ? `CRIT! +${amount}` : `+${amount}`;
 
     const rect = colonialImg.getBoundingClientRect();
-    float.style.left = (event.clientX - rect.left) + "px";
-    float.style.top = (event.clientY - rect.top) + "px";
+    const offsetX = (Math.random() - 0.5) * 40;
+    const offsetY = (Math.random() - 0.5) * 20;
+
+    float.style.left = (event.clientX - rect.left + offsetX) + "px";
+    float.style.top = (event.clientY - rect.top + offsetY) + "px";
 
     container.appendChild(float);
     setTimeout(() => float.remove(), 1000);
@@ -408,19 +418,18 @@ function getTotalCps() {
     buildings.forEach(b => {
         if (b.owned > 0) {
             let branchMult = 1;
-            if (b.branch === "worm") branchMult *= wormBranchMultiplier;
+            if (b.branch === "worm") branchMult *= wormBranchMultiplier * wormEventMultiplier;
             const base = b.baseCps * b.multiplier * b.owned * branchMult;
             total += base;
         }
     });
 
-    total = Math.floor(total * imperialBonusMultiplier * eventMultiplier);
+    total = Math.floor(total * imperialBonusMultiplier * eventMultiplier * goldenCpsMultiplier);
     return total;
 }
 
 /* UPDATE DISPLAY + CLICK POWER SCALING */
 function updateDisplay() {
-    // Click power scales with early evolutions
     const g = getBuilding("gravital");
     const w = getBuilding("worm");
     const s = getBuilding("snake");
@@ -548,6 +557,115 @@ setInterval(() => {
 }, 1000);
 
 /* ============================
+      GOLDEN EVENTS SYSTEM
+============================ */
+
+function spawnGoldenEvent() {
+    const layer = document.getElementById("event-layer");
+    if (!layer) return;
+
+    // Avoid multiple at once
+    if (layer.querySelector(".golden-event")) return;
+
+    const orb = document.createElement("div");
+    orb.className = "golden-event";
+    orb.innerText = "?";
+
+    const layerRect = layer.getBoundingClientRect();
+    const x = Math.random() * (layerRect.width - 80) + 40;
+    const y = Math.random() * (layerRect.height - 160) + 80;
+
+    orb.style.left = `${x}px`;
+    orb.style.top = `${y}px`;
+
+    orb.onclick = () => {
+        triggerRandomEvent();
+        orb.remove();
+    };
+
+    layer.appendChild(orb);
+
+    setTimeout(() => {
+        if (orb.parentElement) orb.remove();
+    }, 10000);
+}
+
+function triggerRandomEvent() {
+    const roll = Math.random();
+    if (roll < 0.16) {
+        gravitySurge();
+    } else if (roll < 0.32) {
+        geneticBloom();
+    } else if (roll < 0.48) {
+        cosmicVisitor();
+    } else if (roll < 0.64) {
+        ophidianBlessing();
+    } else if (roll < 0.80) {
+        wormquake();
+    } else {
+        qGlimpse();
+    }
+}
+
+/* Gravity Surge: +500% CPS (x6) for 20s */
+function gravitySurge() {
+    goldenCpsMultiplier = 6;
+    setTimeout(() => {
+        goldenCpsMultiplier = 1;
+    }, 20000);
+}
+
+/* Genetic Bloom: +1% CPS per building owned for 30s */
+function geneticBloom() {
+    let totalOwned = 0;
+    buildings.forEach(b => totalOwned += b.owned);
+    const factor = 1 + totalOwned * 0.01;
+    goldenCpsMultiplier = factor;
+    setTimeout(() => {
+        goldenCpsMultiplier = 1;
+    }, 30000);
+}
+
+/* Cosmic Visitor: instant 10x CPS */
+function cosmicVisitor() {
+    colonials += getTotalCps() * 10;
+    updateDisplay();
+    saveGame();
+}
+
+/* Ophidian Blessing: 50x click power for 15s */
+function ophidianBlessing() {
+    clickEventMultiplier = 50;
+    setTimeout(() => {
+        clickEventMultiplier = 1;
+    }, 15000);
+}
+
+/* Wormquake: Worm branch +1000% CPS (x11) for 20s */
+function wormquake() {
+    wormEventMultiplier = 11;
+    setTimeout(() => {
+        wormEventMultiplier = 1;
+    }, 20000);
+}
+
+/* Q Glimpse: random one of the above */
+function qGlimpse() {
+    const events = [gravitySurge, geneticBloom, cosmicVisitor, ophidianBlessing, wormquake];
+    const fn = events[Math.floor(Math.random() * events.length)];
+    fn();
+}
+
+/* Schedule golden events every 60–120s */
+function scheduleGoldenEvents() {
+    const delay = 60000 + Math.random() * 60000;
+    setTimeout(() => {
+        spawnGoldenEvent();
+        scheduleGoldenEvents();
+    }, delay);
+}
+
+/* ============================
       SAVE / LOAD SYSTEM
 ============================ */
 
@@ -607,3 +725,4 @@ loadGame();
 renderBuildings();
 renderBoosts();
 updateDisplay();
+scheduleGoldenEvents();
