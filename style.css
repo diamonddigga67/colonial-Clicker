@@ -57,7 +57,21 @@ body {
     transform: scale(0.9);
 }
 
-/* FLOATING +1 */
+#reset-btn {
+    margin: 10px 0 20px;
+    padding: 6px 12px;
+    background: #aa3333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#reset-btn:hover {
+    background: #cc4444;
+}
+
+/* FLOATING TEXT */
 #image-wrapper {
     position: relative;
     display: inline-block;
