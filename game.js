@@ -2421,6 +2421,122 @@ function startGravityLevel(levelNumber) {
     gravityNavRunning = true;
     updateLarvaPhysics();
 }
+let evolution = {
+    stabilityFins: false,
+    pulse: false,
+    shield: false,
+    memory: false
+};
+
+let evolutionPoints = 0;
+function updateEvolutionDisplay() {
+    const box = document.getElementById("gravity-evolution-display");
+
+    box.innerHTML = `
+        <h3>Evolution</h3>
+        <p>Points: ${evolutionPoints}</p>
+        <ul>
+            <li>Stability Fins: ${evolution.stabilityFins ? "✓" : "—"}</li>
+            <li>Bioluminescent Pulse: ${evolution.pulse ? "✓" : "—"}</li>
+            <li>Spore Shield: ${evolution.shield ? "✓" : "—"}</li>
+            <li>Mycelial Memory: ${evolution.memory ? "✓" : "—"}</li>
+        </ul>
+    `;
+}
+updateEvolutionDisplay();
+function completeLevel(levelNumber) {
+    gravityNavRunning = false;
+
+    larva.style.transition = "opacity 0.4s";
+    larva.style.opacity = "0";
+
+    setTimeout(() => larva.remove(), 400);
+
+    if (levelNumber === 1) {
+        evolution.stabilityFins = true;
+        evolutionPoints += 1;
+    }
+
+    if (levelNumber === 2) {
+        evolution.pulse = true;
+        evolutionPoints += 2;
+    }
+
+    if (levelNumber === 3) {
+        evolution.shield = true;
+        evolution.memory = true;
+        evolutionPoints += 3;
+    }
+
+    updateEvolutionDisplay();
+
+    alert(`Level ${levelNumber} complete! Evolution unlocked.`);
+}
+let controlBoost = evolution.stabilityFins ? 1.25 : 1;
+
+if (thrustLeft) {
+    velX -= THRUST * controlBoost;
+    velY -= THRUST * 0.2 * controlBoost;
+}
+
+if (thrustRight) {
+    velX += THRUST * controlBoost;
+    velY -= THRUST * 0.2 * controlBoost;
+}
+let pulseCooldown = false;
+
+document.addEventListener("keydown", e => {
+    if (e.key === " " && evolution.pulse && !pulseCooldown) {
+        triggerPulse();
+    }
+});
+function triggerPulse() {
+    pulseCooldown = true;
+
+    larva.classList.add("larva-pulse");
+
+    // Reveal hazards
+    document.querySelectorAll(".magnet-crystal, .spore-vent, .tendril")
+        .forEach(h => h.style.opacity = "1");
+
+    setTimeout(() => {
+        larva.classList.remove("larva-pulse");
+
+        // Fade hazards back
+        document.querySelectorAll(".magnet-crystal, .spore-vent, .tendril")
+            .forEach(h => h.style.opacity = "0.5");
+
+        pulseCooldown = false;
+    }, 800);
+}
+function handleLarvaCollision() {
+    larva.classList.add("larva-hit");
+    setTimeout(() => larva.classList.remove("larva-hit"), 200);
+
+    const impact = Math.abs(velX) + Math.abs(velY);
+
+    if (impact > 6) {
+        if (evolution.shield) {
+            evolution.shield = false;
+            updateEvolutionDisplay();
+
+            // Shield break flash
+            larva.style.filter = "brightness(3)";
+            setTimeout(() => larva.style.filter = "brightness(1)", 200);
+
+            velX *= -0.3;
+            velY *= -0.3;
+            return;
+        }
+
+        killLarva();
+    } else {
+        velX *= -0.4;
+        velY *= -0.4;
+    }
+}
+const effectiveGravity = evolution.memory ? GRAVITY * 0.9 : GRAVITY;
+velY += effectiveGravity;
 
 /* INITIALIZE */
 loadGame();
