@@ -2,43 +2,75 @@ body {
     background: #0b0f1a;
     color: #e0e6ff;
     font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+#game-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* LEFT PANEL */
+#upgrade-panel {
+    width: 300px;
+    background: #11162a;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 3px solid #1f2640;
+}
+
+#upgrade-panel h2 {
     text-align: center;
-    padding: 30px;
+}
+
+.upgrade {
+    background: #1a1f33;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+.upgrade button {
+    padding: 8px 15px;
+    background: #3a4fff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.upgrade button:hover {
+    background: #5c6cff;
+}
+
+/* MAIN AREA */
+#main-area {
+    flex: 1;
+    text-align: center;
+    padding-top: 20px;
 }
 
 #colonial-img {
     width: 300px;
     cursor: pointer;
     transition: transform 0.1s ease;
-    margin: 20px;
 }
 
 #colonial-img:active {
     transform: scale(0.9);
 }
 
-.upgrade {
-    background: #1a1f33;
-    padding: 15px;
-    margin: 10px auto;
-    width: 300px;
-    border-radius: 8px;
-}
-
-button {
-    padding: 10px 20px;
-    background: #3a4fff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #5c6cff;
-}
-#float-container {
+/* FLOATING +1 */
+#image-wrapper {
     position: relative;
+    display: inline-block;
+}
+
+#float-container {
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .float {
