@@ -11,6 +11,19 @@ let goldenCpsMultiplier = 1;      // Golden events CPS
 let wormEventMultiplier = 1;      // Wormquake
 let clickEventMultiplier = 1;     // Ophidian Blessing
 
+/* Temporary boosts from Archaeotech */
+let tempCpsMultiplier = 1;
+let tempClickMultiplier = 1;
+let tempGoldenFreqFactor = 1;
+
+/* Permanent Archaeotech buffs */
+let archaeotechPermanent = {
+    cpsPercent: 0,
+    clickPercent: 0,
+    goldenDurationPercent: 0,
+    branchPercent: 0
+};
+
 /* Q‑Essence / Q‑Tree */
 let qEssence = 0;
 const qUpgrades = [
@@ -29,7 +42,7 @@ function isQBought(id) {
 
 /* CLICK HANDLER WITH SPECIAL ABILITIES */
 colonialImg.onclick = (event) => {
-    let gain = clickPower * clickEventMultiplier;
+    let gain = clickPower * clickEventMultiplier * tempClickMultiplier;
     let isCrit = false;
 
     // Quantum Pilgrims: 10% chance for 10x click (+5% if Q_crit)
@@ -454,13 +467,24 @@ function getTotalCps() {
     buildings.forEach(b => {
         if (b.owned > 0) {
             let branchMult = 1;
-            if (b.branch === "worm") branchMult *= wormBranchMultiplier * wormEventMultiplier;
+            if (b.branch === "worm") {
+                branchMult *= wormBranchMultiplier * wormEventMultiplier * (1 + archaeotechPermanent.branchPercent / 100);
+            }
             const base = b.baseCps * b.multiplier * b.owned * branchMult;
             total += base;
         }
     });
 
-    total = Math.floor(total * imperialBonusMultiplier * eventMultiplier * goldenCpsMultiplier * qCpsBonus * snakeBonus);
+    total = Math.floor(
+        total *
+        imperialBonusMultiplier *
+        eventMultiplier *
+        goldenCpsMultiplier *
+        qCpsBonus *
+        snakeBonus *
+        tempCpsMultiplier *
+        (1 + archaeotechPermanent.cpsPercent / 100)
+    );
     return total;
 }
 
@@ -474,6 +498,8 @@ function updateDisplay() {
     if (g && g.owned >= 10) clickPower = 2;
     if (w && w.owned >= 10) clickPower = 3;
     if (s && s.owned >= 10) clickPower = 5;
+
+    clickPower = Math.floor(clickPower * (1 + archaeotechPermanent.clickPercent / 100));
 
     document.getElementById("counter").innerText = `Colonials: ${colonials}`;
     document.getElementById("cps-counter").innerText = `CPS: ${getTotalCps()}`;
@@ -623,7 +649,7 @@ function spawnGoldenEvent() {
 
     setTimeout(() => {
         if (orb.parentElement) orb.remove();
-    }, 10000);
+    }, 10000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
 function triggerRandomEvent() {
@@ -648,7 +674,7 @@ function gravitySurge() {
     goldenCpsMultiplier = 6;
     setTimeout(() => {
         goldenCpsMultiplier = 1;
-    }, 20000);
+    }, 20000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
 /* Genetic Bloom: +1% CPS per building owned for 30s */
@@ -659,7 +685,7 @@ function geneticBloom() {
     goldenCpsMultiplier = factor;
     setTimeout(() => {
         goldenCpsMultiplier = 1;
-    }, 30000);
+    }, 30000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
 /* Cosmic Visitor: instant 10x CPS */
@@ -674,7 +700,7 @@ function ophidianBlessing() {
     clickEventMultiplier = 50;
     setTimeout(() => {
         clickEventMultiplier = 1;
-    }, 15000);
+    }, 15000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
 /* Wormquake: Worm branch +1000% CPS (x11) for 20s */
@@ -682,7 +708,7 @@ function wormquake() {
     wormEventMultiplier = 11;
     setTimeout(() => {
         wormEventMultiplier = 1;
-    }, 20000);
+    }, 20000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
 }
 
 /* Q Glimpse: random one of the above */
@@ -696,6 +722,7 @@ function qGlimpse() {
 function scheduleGoldenEvents() {
     let base = 60000 + Math.random() * 60000;
     if (isQBought("q_golden")) base *= 0.8; // +20% frequency
+    base = base / tempGoldenFreqFactor;
     setTimeout(() => {
         spawnGoldenEvent();
         scheduleGoldenEvents();
@@ -736,6 +763,9 @@ function ascend() {
     goldenCpsMultiplier = 1;
     wormEventMultiplier = 1;
     clickEventMultiplier = 1;
+    tempCpsMultiplier = 1;
+    tempClickMultiplier = 1;
+    tempGoldenFreqFactor = 1;
 
     saveGame();
     renderBuildings();
@@ -789,7 +819,7 @@ function renderQTree() {
 }
 
 /* ============================
-      MINIGAME PANELS (PLACEHOLDERS)
+      MINIGAME PANELS
 ============================ */
 
 const miniPanel = document.getElementById("minigame-panel");
@@ -797,20 +827,18 @@ const miniTitle = document.getElementById("minigame-title");
 const miniContent = document.getElementById("minigame-content");
 const qPanel = document.getElementById("qtree-panel");
 
-document.getElementById("btn-archaeotech").onclick = () =>
-    openMinigame("Archaeotech Lab",
-        "Combine ancient relics to unlock permanent buffs. (Minigame placeholder — you can expand this later.)");
+document.getElementById("btn-archaeotech").onclick = () => openArchaeotechLab();
 
 document.getElementById("btn-gravity").onclick = () =>
-    openMinigame("Gravity Navigation",
+    openSimpleMinigame("Gravity Navigation",
         "Steer gravity waves to hit targets and gain temporary CPS boosts. (Placeholder.)");
 
 document.getElementById("btn-burrow").onclick = () =>
-    openMinigame("Burrow Network",
+    openSimpleMinigame("Burrow Network",
         "Connect tunnels between nodes to boost Worm branch production. (Placeholder.)");
 
 document.getElementById("btn-neural").onclick = () =>
-    openMinigame("Neural Web",
+    openSimpleMinigame("Neural Web",
         "Link neurons into circuits for psionic bonuses. (Placeholder.)");
 
 document.getElementById("btn-qtree").onclick = () => {
@@ -826,10 +854,301 @@ document.getElementById("close-qtree").onclick = () =>
 
 document.getElementById("ascend-btn").onclick = ascend;
 
-function openMinigame(title, text) {
+function openSimpleMinigame(title, text) {
     miniTitle.innerText = title;
     miniContent.innerHTML = `<p>${text}</p>`;
     miniPanel.classList.remove("hidden");
+}
+
+/* ============================
+      ARCHAEO TECH LAB MINIGAME
+============================ */
+
+const RUIN_SIZE = 6;
+const TILE_TYPES = ["empty", "relic", "hazard", "core", "rare", "cache"];
+
+let ruinState = {
+    active: false,
+    grid: [],
+    playerX: 0,
+    playerY: 0,
+    finished: false,
+    message: ""
+};
+
+function openArchaeotechLab() {
+    miniTitle.innerText = "Archaeotech Lab";
+    if (!ruinState.active || ruinState.finished || ruinState.grid.length === 0) {
+        startNewRuinRun();
+    }
+    renderRuinUI();
+    miniPanel.classList.remove("hidden");
+}
+
+function startNewRuinRun() {
+    ruinState.active = true;
+    ruinState.finished = false;
+    ruinState.message = "Explore the ruins. Avoid hazards, extract relics.";
+    ruinState.grid = [];
+
+    // Balanced distribution: 40% empty, 25% relic, 15% hazard, 10% core, 5% rare, 5% cache
+    for (let y = 0; y < RUIN_SIZE; y++) {
+        const row = [];
+        for (let x = 0; x < RUIN_SIZE; x++) {
+            const r = Math.random();
+            let type;
+            if (r < 0.40) type = "empty";
+            else if (r < 0.65) type = "relic";
+            else if (r < 0.80) type = "hazard";
+            else if (r < 0.90) type = "core";
+            else if (r < 0.95) type = "rare";
+            else type = "cache";
+
+            row.push({
+                type,
+                revealed: false,
+                looted: false
+            });
+        }
+        ruinState.grid.push(row);
+    }
+
+    // Place player on a safe tile
+    let px, py;
+    while (true) {
+        px = Math.floor(Math.random() * RUIN_SIZE);
+        py = Math.floor(Math.random() * RUIN_SIZE);
+        if (ruinState.grid[py][px].type !== "hazard") break;
+    }
+    ruinState.playerX = px;
+    ruinState.playerY = py;
+    ruinState.grid[py][px].revealed = true;
+}
+
+function renderRuinUI() {
+    let html = `
+        <div class="ruin-controls">
+            <div>
+                <button onclick="ruinMove('up')">Up</button>
+            </div>
+            <div>
+                <button onclick="ruinMove('left')">Left</button>
+                <button onclick="ruinMove('down')">Down</button>
+                <button onclick="ruinMove('right')">Right</button>
+            </div>
+            <div style="margin-top:4px;">
+                <button onclick="ruinScan()">Scan</button>
+                <button onclick="ruinExtract()">Extract</button>
+                <button onclick="startNewRuinRun()">New Run</button>
+            </div>
+            <div id="ruin-status">${ruinState.message}</div>
+        </div>
+        <div class="ruin-grid">
+    `;
+
+    for (let y = 0; y < RUIN_SIZE; y++) {
+        for (let x = 0; x < RUIN_SIZE; x++) {
+            const tile = ruinState.grid[y][x];
+            const isPlayer = (x === ruinState.playerX && y === ruinState.playerY);
+            const classes = ["ruin-tile"];
+
+            if (!tile.revealed) classes.push("hidden");
+            else classes.push("revealed");
+
+            if (tile.type === "hazard") classes.push("hazard");
+            if (tile.type === "relic") classes.push("relic");
+            if (tile.type === "core") classes.push("core");
+            if (tile.type === "rare") classes.push("rare");
+            if (tile.type === "cache") classes.push("cache");
+            if (isPlayer) classes.push("player");
+
+            let symbol = "";
+            if (tile.revealed) {
+                if (tile.type === "empty") symbol = "";
+                if (tile.type === "relic") symbol = "R";
+                if (tile.type === "hazard") symbol = "!";
+                if (tile.type === "core") symbol = "C";
+                if (tile.type === "rare") symbol = "★";
+                if (tile.type === "cache") symbol = "?";
+            }
+
+            html += `<div class="${classes.join(" ")}"></div>`;
+        }
+    }
+
+    html += `</div>`;
+    miniContent.innerHTML = html;
+
+    // Add tooltips after DOM insert
+    const tiles = miniContent.querySelectorAll(".ruin-tile");
+    let idx = 0;
+    for (let y = 0; y < RUIN_SIZE; y++) {
+        for (let x = 0; x < RUIN_SIZE; x++) {
+            const tile = ruinState.grid[y][x];
+            const el = tiles[idx++];
+            if (tile.revealed) {
+                let tip = "";
+                if (tile.type === "empty") tip = "Empty chamber";
+                if (tile.type === "relic") tip = "Relic fragment (temporary boost)";
+                if (tile.type === "hazard") tip = "Hazard! Stepping here ends the run.";
+                if (tile.type === "core") tip = "Ancient core (Q‑Essence)";
+                if (tile.type === "rare") tip = "Rare relic (permanent buff)";
+                if (tile.type === "cache") tip = "Hidden cache (random reward)";
+                el.title = tip;
+            }
+        }
+    }
+}
+
+function ruinMove(dir) {
+    if (!ruinState.active || ruinState.finished) return;
+
+    let nx = ruinState.playerX;
+    let ny = ruinState.playerY;
+
+    if (dir === "up") ny--;
+    if (dir === "down") ny++;
+    if (dir === "left") nx--;
+    if (dir === "right") nx++;
+
+    if (nx < 0 || nx >= RUIN_SIZE || ny < 0 || ny >= RUIN_SIZE) {
+        ruinState.message = "You can't move outside the ruins.";
+        renderRuinUI();
+        return;
+    }
+
+    ruinState.playerX = nx;
+    ruinState.playerY = ny;
+    const tile = ruinState.grid[ny][nx];
+    tile.revealed = true;
+
+    if (tile.type === "hazard") {
+        ruinState.message = "You triggered a hazard. The ruin collapses!";
+        ruinState.finished = true;
+        ruinState.active = false;
+    } else {
+        ruinState.message = "You move deeper into the ruins.";
+    }
+
+    renderRuinUI();
+}
+
+function ruinScan() {
+    if (!ruinState.active || ruinState.finished) return;
+
+    const x = ruinState.playerX;
+    const y = ruinState.playerY;
+
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < RUIN_SIZE && ny >= 0 && ny < RUIN_SIZE) {
+                ruinState.grid[ny][nx].revealed = true;
+            }
+        }
+    }
+
+    ruinState.message = "You scan the surrounding chambers.";
+    renderRuinUI();
+}
+
+function ruinExtract() {
+    if (!ruinState.active || ruinState.finished) return;
+
+    const x = ruinState.playerX;
+    const y = ruinState.playerY;
+    const tile = ruinState.grid[y][x];
+
+    if (!tile.revealed) {
+        ruinState.message = "You must reveal this chamber before extracting.";
+        renderRuinUI();
+        return;
+    }
+
+    if (tile.looted) {
+        ruinState.message = "This chamber has already been picked clean.";
+        renderRuinUI();
+        return;
+    }
+
+    tile.looted = true;
+
+    if (tile.type === "relic") {
+        applyRelicReward();
+        ruinState.message = "You extract a relic fragment. A temporary boost surges through your empire.";
+    } else if (tile.type === "core") {
+        const gained = 1 + Math.floor(Math.random() * 3);
+        qEssence += gained;
+        ruinState.message = `You recover an ancient core. +${gained} Q‑Essence.`;
+        renderQTree();
+    } else if (tile.type === "rare") {
+        applyRareRelicReward();
+        ruinState.message = "You uncover a rare relic. A permanent bonus is etched into history.";
+    } else if (tile.type === "cache") {
+        applyCacheReward();
+    } else {
+        ruinState.message = "Nothing of value here.";
+    }
+
+    saveGame();
+    updateDisplay();
+    renderRuinUI();
+}
+
+function applyRelicReward() {
+    const roll = Math.random();
+    if (roll < 0.33) {
+        // CPS boost
+        tempCpsMultiplier *= 3;
+        setTimeout(() => {
+            tempCpsMultiplier /= 3;
+        }, 30000);
+    } else if (roll < 0.66) {
+        // Click boost
+        tempClickMultiplier *= 1.5;
+        setTimeout(() => {
+            tempClickMultiplier /= 1.5;
+        }, 60000);
+    } else {
+        // Golden frequency
+        tempGoldenFreqFactor *= 1.5;
+        setTimeout(() => {
+            tempGoldenFreqFactor /= 1.5;
+        }, 45000);
+    }
+}
+
+function applyRareRelicReward() {
+    const roll = Math.random();
+    if (roll < 0.25) {
+        archaeotechPermanent.cpsPercent += 1;
+    } else if (roll < 0.5) {
+        archaeotechPermanent.clickPercent += 1;
+    } else if (roll < 0.75) {
+        archaeotechPermanent.goldenDurationPercent += 1;
+    } else {
+        archaeotechPermanent.branchPercent += 1;
+    }
+}
+
+function applyCacheReward() {
+    const roll = Math.random();
+    if (roll < 0.5) {
+        applyRelicReward();
+        ruinState.message = "A hidden cache yields a powerful temporary relic.";
+    } else if (roll < 0.9) {
+        applyRareRelicReward();
+        ruinState.message = "A hidden cache reveals a rare relic. Permanent power gained.";
+    } else {
+        // Legendary: big Q‑Essence + permanent buff
+        const gained = 5 + Math.floor(Math.random() * 6);
+        qEssence += gained;
+        archaeotechPermanent.cpsPercent += 2;
+        archaeotechPermanent.clickPercent += 2;
+        ruinState.message = `You discover a legendary artifact! +${gained} Q‑Essence and strong permanent boosts.`;
+        renderQTree();
+    }
 }
 
 /* ============================
@@ -853,7 +1172,8 @@ function saveGame() {
         qUpgrades: qUpgrades.map(u => ({
             id: u.id,
             bought: u.bought
-        }))
+        })),
+        archaeotechPermanent: archaeotechPermanent
     };
 
     localStorage.setItem("colonialClickerSave", JSON.stringify(saveData));
@@ -888,11 +1208,20 @@ function loadGame() {
         const u = qUpgrades.find(x => x.id === saved.id);
         if (u) u.bought = saved.bought;
     });
+
+    if (data.archaeotechPermanent) {
+        archaeotechPermanent = {
+            cpsPercent: data.archaeotechPermanent.cpsPercent || 0,
+            clickPercent: data.archaeotechPermanent.clickPercent || 0,
+            goldenDurationPercent: data.archaeotechPermanent.goldenDurationPercent || 0,
+            branchPercent: data.archaeotechPermanent.branchPercent || 0
+        };
+    }
 }
 
 /* MANUAL RESET */
 document.getElementById("reset-btn").onclick = () => {
-    if (confirm("Are you sure you want to reset your progress? (This does NOT reset Q‑Essence.)")) {
+    if (confirm("Are you sure you want to reset your progress? (This does NOT reset Q‑Essence or Archaeotech permanent relics.)")) {
         colonials = 0;
         buildings.forEach(b => {
             b.owned = 0;
@@ -905,6 +1234,9 @@ document.getElementById("reset-btn").onclick = () => {
         goldenCpsMultiplier = 1;
         wormEventMultiplier = 1;
         clickEventMultiplier = 1;
+        tempCpsMultiplier = 1;
+        tempClickMultiplier = 1;
+        tempGoldenFreqFactor = 1;
 
         saveGame();
         renderBuildings();
