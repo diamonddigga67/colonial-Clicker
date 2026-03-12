@@ -1838,6 +1838,46 @@ function initGravityNavigation() {
     console.log("Gravity Navigation initialized");
     // Physics, levels, larva, hazards, and evolution will be added here
 }
+let larva = null;
+
+let larvaX = 0;
+let larvaY = 0;
+
+let velX = 0;
+let velY = 0;
+
+const GRAVITY = 0.25;
+const THRUST = 0.35;
+const MAX_SPEED = 6;
+
+let thrustLeft = false;
+let thrustRight = false;
+
+let gravityNavRunning = false;
+document.addEventListener("keydown", e => {
+    if (!gravityNavRunning) return;
+
+    if (e.key === "ArrowLeft" || e.key === "a") {
+        thrustLeft = true;
+        larva.classList.add("larva-thrust-left");
+    }
+    if (e.key === "ArrowRight" || e.key === "d") {
+        thrustRight = true;
+        larva.classList.add("larva-thrust-right");
+    }
+});
+
+document.addEventListener("keyup", e => {
+    if (e.key === "ArrowLeft" || e.key === "a") {
+        thrustLeft = false;
+        larva.classList.remove("larva-thrust-left");
+    }
+    if (e.key === "ArrowRight" || e.key === "d") {
+        thrustRight = false;
+        larva.classList.remove("larva-thrust-right");
+    }
+});
+
 
 /* INITIALIZE */
 loadGame();
@@ -1847,5 +1887,22 @@ updateDisplay();
 renderQTree();
 scheduleGoldenEvents();
 initWormWeb();
-initGravityNavigation();
+initGravityNavigation(function spawnLarva() {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    // Remove old larva if present
+    if (larva) larva.remove();
+
+    larva = document.createElement("div");
+    larva.id = "larva";
+    viewport.appendChild(larva);
+
+    // Starting position
+    larvaX = viewport.clientWidth / 2;
+    larvaY = 40;
+
+    velX = 0;
+    velY = 0;
+}
+);
 initArchaeotechLab();
