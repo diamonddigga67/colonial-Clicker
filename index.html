@@ -2,24 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Colonial Clicker – All Tomorrows Game</title>
+    <title>Colonial Clicker</title>
 
     <meta name="description" content="Colonial Clicker is an All Tomorrows–themed clicker game where you evolve posthuman species.">
     <meta name="keywords" content="Colonial Clicker, All Tomorrows, clicker game, evolution game">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>All Tomorrows: Colonial Ascension</h1>
 
-    <div id="counter">Colonials: 0</div>
+    <div id="game-container">
 
-    <!-- CLICKABLE IMAGE -->
-    <img id="colonial-img" src="colonial.png" alt="Colonial" />
+        <!-- LEFT SIDE: UPGRADES -->
+        <div id="upgrade-panel">
+            <h2>Upgrades</h2>
+            <div id="upgrades"></div>
+        </div>
 
-    <h2>Upgrades</h2>
-    <div id="upgrades"></div>
+        <!-- CENTER: MAIN GAME -->
+        <div id="main-area">
+            <h1>All Tomorrows: Colonial Ascension</h1>
+
+            <div id="counter">Colonials: 0</div>
+
+            <div id="image-wrapper">
+                <img id="colonial-img" src="colonial.png" alt="Colonial">
+                <div id="float-container"></div>
+            </div>
+        </div>
+
+    </div>
 
     <script src="game.js"></script>
 </body>
 </html>
-<div id="float-container"></div>
