@@ -2247,6 +2247,87 @@ function checkLumenCollection() {
     });
 }
 checkLumenCollection();
+const gravityLevels = {
+    1: {
+        walls: [ /* already defined */ ],
+        magnets: [
+            { x: 180, y: 500, strength: 0.4 }
+        ],
+        vents: [
+            { x: 80, y: 700, direction: 1 }
+        ],
+        tendrils: [
+            { x: 220, y: 900, sway: 0.015 }
+        ],
+        lumens: [
+            { x: 140, y: 300 },
+            { x: 200, y: 600 },
+            { x: 120, y: 900 }
+        ],
+        nutrients: [
+            { x: 160, y: 450 }
+        ],
+        ancient: [],
+        exitY: 1800
+    },
+
+    2: {
+        walls: [ /* already defined */ ],
+        magnets: [
+            { x: 150, y: 600, strength: 0.5 },
+            { x: 240, y: 1200, strength: 0.6 }
+        ],
+        vents: [
+            { x: 100, y: 900, direction: 1 },
+            { x: 260, y: 1400, direction: -1 }
+        ],
+        tendrils: [
+            { x: 180, y: 1100, sway: 0.02 }
+        ],
+        lumens: [
+            { x: 140, y: 400 },
+            { x: 220, y: 700 },
+            { x: 100, y: 1100 }
+        ],
+        nutrients: [
+            { x: 200, y: 800 }
+        ],
+        ancient: [
+            { x: 180, y: 1500 }
+        ],
+        exitY: 2000
+    },
+
+    3: {
+        walls: [ /* already defined */ ],
+        magnets: [
+            { x: 160, y: 500, strength: 0.6 },
+            { x: 240, y: 1300, strength: 0.7 }
+        ],
+        vents: [
+            { x: 80, y: 700, direction: 1 },
+            { x: 260, y: 1100, direction: -1 },
+            { x: 140, y: 1600, direction: 1 }
+        ],
+        tendrils: [
+            { x: 200, y: 900, sway: 0.025 },
+            { x: 120, y: 1400, sway: 0.02 }
+        ],
+        lumens: [
+            { x: 160, y: 300 },
+            { x: 80, y: 700 },
+            { x: 220, y: 1100 },
+            { x: 140, y: 1500 }
+        ],
+        nutrients: [
+            { x: 200, y: 1000 }
+        ],
+        ancient: [
+            { x: 100, y: 1900 }
+        ],
+        exitY: 2300
+    }
+};
 
 
 /* INITIALIZE */
