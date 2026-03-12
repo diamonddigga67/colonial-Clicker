@@ -2153,6 +2153,101 @@ function updateTendrils() {
     });
 }
 updateTendrils();
+function spawnNutrient(x, y) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const n = document.createElement("div");
+    n.classList.add("nutrient");
+    n.style.left = x + "px";
+    n.style.top = y + "px";
+
+    viewport.appendChild(n);
+    return n;
+}
+function checkNutrientCollection() {
+    const nutrients = document.querySelectorAll(".nutrient");
+
+    nutrients.forEach(n => {
+        const nx = parseFloat(n.style.left);
+        const ny = parseFloat(n.style.top);
+
+        if (
+            larvaX + 40 > nx &&
+            larvaX < nx + 26 &&
+            larvaY + 80 > ny &&
+            larvaY < ny + 26
+        ) {
+            n.remove();
+            collectedNutrients++;
+
+            // Temporary buff: slight control boost
+            velX *= 0.8;
+            velY *= 0.8;
+        }
+    });
+}
+function spawnAncientCell(x, y) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const a = document.createElement("div");
+    a.classList.add("ancient-cell");
+    a.style.left = x + "px";
+    a.style.top = y + "px";
+
+    viewport.appendChild(a);
+    return a;
+}
+function checkAncientCellCollection() {
+    const cells = document.querySelectorAll(".ancient-cell");
+
+    cells.forEach(c => {
+        const cx = parseFloat(c.style.left);
+        const cy = parseFloat(c.style.top);
+
+        if (
+            larvaX + 40 > cx &&
+            larvaX < cx + 30 &&
+            larvaY + 80 > cy &&
+            larvaY < cy + 30
+        ) {
+            c.remove();
+            collectedAncientCells++;
+        }
+    });
+}
+checkAncientCellCollection();
+checkNutrientCollection();
+function spawnLumen(x, y) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const l = document.createElement("div");
+    l.classList.add("lumen");
+    l.style.left = x + "px";
+    l.style.top = y + "px";
+
+    viewport.appendChild(l);
+    return l;
+}
+function checkLumenCollection() {
+    const lumens = document.querySelectorAll(".lumen");
+
+    lumens.forEach(l => {
+        const lx = parseFloat(l.style.left);
+        const ly = parseFloat(l.style.top);
+
+        if (
+            larvaX + 40 > lx &&
+            larvaX < lx + 18 &&
+            larvaY + 80 > ly &&
+            larvaY < ly + 18
+        ) {
+            l.remove();
+            collectedLumens++;
+        }
+    });
+}
+checkLumenCollection();
+
 
 /* INITIALIZE */
 loadGame();
