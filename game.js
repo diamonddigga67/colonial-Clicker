@@ -2026,6 +2026,18 @@ function killLarva() {
         larva.remove();
     }, 400);
 }
+function spawnMagnet(x, y, strength = 0.4) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const m = document.createElement("div");
+    m.classList.add("magnet-crystal");
+    m.style.left = x + "px";
+    m.style.top = y + "px";
+    m.dataset.strength = strength;
+
+    viewport.appendChild(m);
+    return m;
+}
 
 
 /* INITIALIZE */
