@@ -1841,3 +1841,4 @@ renderBoosts();
 updateDisplay();
 renderQTree();
 scheduleGoldenEvents();
+initWormWeb();
