@@ -3,15 +3,35 @@ let cps = 0;
 
 const colonialImg = document.getElementById("colonial-img");
 
-colonialImg.onclick = () => {
+/* CLICK HANDLER WITH FLOATING +1 */
+colonialImg.onclick = (event) => {
     colonials++;
     updateDisplay();
+    spawnFloat(event);
 };
 
+/* FLOATING +1 EFFECT */
+function spawnFloat(event) {
+    const container = document.getElementById("float-container");
+    const float = document.createElement("div");
+    float.className = "float";
+    float.innerText = "+1";
+
+    const rect = colonialImg.getBoundingClientRect();
+    float.style.left = (event.clientX - rect.left) + "px";
+    float.style.top = (event.clientY - rect.top) + "px";
+
+    container.appendChild(float);
+
+    setTimeout(() => float.remove(), 1000);
+}
+
+/* DISPLAY UPDATE */
 function updateDisplay() {
     document.getElementById("counter").innerText = `Colonials: ${colonials}`;
 }
 
+/* UPGRADE DATA */
 const upgrades = [
     {
         name: "Gravital Adaptation",
@@ -39,6 +59,7 @@ const upgrades = [
     }
 ];
 
+/* RENDER UPGRADE LIST */
 function renderUpgrades() {
     const container = document.getElementById("upgrades");
     upgrades.forEach((u, index) => {
@@ -54,6 +75,7 @@ function renderUpgrades() {
     });
 }
 
+/* BUY UPGRADE */
 function buyUpgrade(i) {
     const u = upgrades[i];
     if (colonials >= u.cost) {
@@ -63,10 +85,10 @@ function buyUpgrade(i) {
     }
 }
 
+/* AUTO-GENERATE COLONIALS */
 setInterval(() => {
     colonials += cps;
     updateDisplay();
 }, 1000);
 
 renderUpgrades();
-
