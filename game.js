@@ -1313,6 +1313,98 @@ function renderQTree() {
 }
 
 /* ============================
+   WORM EVOLUTION WEB SYSTEM
+============================ */
+
+const wormWebNodes = [
+    { id: 1, x: 180, y: 20,  prereq: null },
+    { id: 2, x: 80,  y: 120, prereq: 1 },
+    { id: 3, x: 280, y: 120, prereq: 1 },
+    { id: 4, x: 50,  y: 240, prereq: 2 },
+    { id: 5, x: 310, y: 240, prereq: 3 },
+    { id: 6, x: 180, y: 300, prereq: [4, 5] }
+];
+
+let wormUpgrades = {
+    1: "locked",
+    2: "locked",
+    3: "locked",
+    4: "locked",
+    5: "locked",
+    6: "locked"
+};
+
+function initWormWeb() {
+    const container = document.getElementById("worm-upgrade-web");
+    const svg = document.getElementById("worm-web-lines");
+
+    // Position nodes
+    document.querySelectorAll(".web-node").forEach(node => {
+        const id = parseInt(node.dataset.upg);
+        const data = wormWebNodes.find(n => n.id === id);
+        node.style.left = data.x + "px";
+        node.style.top = data.y + "px";
+
+        node.addEventListener("click", () => tryUnlockWormUpgrade(id));
+    });
+
+    // Draw connecting lines
+    wormWebNodes.forEach(n => {
+        if (!n.prereq) return;
+
+        const prereqs = Array.isArray(n.prereq) ? n.prereq : [n.prereq];
+
+        prereqs.forEach(p => {
+            const parent = wormWebNodes.find(x => x.id === p);
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", parent.x + 30);
+            line.setAttribute("y1", parent.y + 30);
+            line.setAttribute("x2", n.x + 30);
+            line.setAttribute("y2", n.y + 30);
+            line.setAttribute("stroke", "#3a5a34");
+            line.setAttribute("stroke-width", "3");
+            line.setAttribute("stroke-linecap", "round");
+
+            svg.appendChild(line);
+        });
+    });
+
+    updateWormWebUI();
+}
+
+function tryUnlockWormUpgrade(id) {
+    const node = wormWebNodes.find(n => n.id === id);
+
+    // Check prereqs
+    if (node.prereq) {
+        const prereqs = Array.isArray(node.prereq) ? node.prereq : [node.prereq];
+        for (const p of prereqs) {
+            if (wormUpgrades[p] !== "completed") {
+                return; // can't unlock yet
+            }
+        }
+    }
+
+    wormUpgrades[id] = "completed";
+    updateWormWebUI();
+}
+
+function updateWormWebUI() {
+    document.querySelectorAll(".web-node").forEach(node => {
+        const id = parseInt(node.dataset.upg);
+        const state = wormUpgrades[id];
+
+        node.classList.remove("locked", "unlocked", "completed");
+
+        if (state === "completed") node.classList.add("completed");
+        else if (state === "locked") node.classList.add("locked");
+        else node.classList.add("unlocked");
+    });
+}
+
+
+/* ============================
       MINIGAME PANELS
 ============================ */
 
