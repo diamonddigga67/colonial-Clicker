@@ -1656,6 +1656,7 @@ function saveGame() {
             id: b.id,
             owned: b.owned,
             cost: b.cost,
+            burrow: saveBurrowData(),
             multiplier: b.multiplier
         })),
         boosts: boosts.map(u => ({
