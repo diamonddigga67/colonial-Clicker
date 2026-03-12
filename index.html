@@ -7,75 +7,135 @@
 </head>
 <body>
 
-    <div id="game-container">
+<div id="game-container">
 
-        <!-- LEFT: EVOLUTION BUILDINGS -->
-        <div id="upgrade-panel">
-            <h2>Evolution Tree</h2>
-            <div id="buildings"></div>
+    <!-- LEFT: EVOLUTION BUILDINGS -->
+    <div id="upgrade-panel">
+        <h2>Evolution Tree</h2>
+        <div id="buildings"></div>
+        <h2>Boosts</h2>
+        <div id="boosts"></div>
+    </div>
+
+    <!-- WORM UPGRADE WEB -->
+    <div id="worm-upgrade-web">
+        <svg id="worm-web-lines"></svg>
+
+        <div class="web-node" data-upg="1">I</div>
+        <div class="web-node" data-upg="2">II</div>
+        <div class="web-node" data-upg="3">III</div>
+        <div class="web-node" data-upg="4">IV</div>
+        <div class="web-node" data-upg="5">V</div>
+        <div class="web-node" data-upg="6">VI</div>
+    </div>
+
+    <!-- CENTER: MAIN GAME -->
+    <div id="main-area">
+        <h1>Colonial Clicker</h1>
+
+        <div id="counter">Colonials: 0</div>
+        <div id="cps-counter">CPS: 0</div>
+
+        <button id="reset-btn">Reset Save</button>
+
+        <div id="image-wrapper">
+            <img id="colonial-img" src="colonial.png" alt="Colonial">
+            <div id="float-container"></div>
         </div>
 
-        <!-- WORM UPGRADE WEB -->
-        <div id="worm-upgrade-web">
-            <svg id="worm-web-lines"></svg>
+        <!-- Golden event container -->
+        <div id="event-layer"></div>
+        <div id="golden-message"></div>
 
-            <div class="web-node" data-upg="1">I</div>
-            <div class="web-node" data-upg="2">II</div>
-            <div class="web-node" data-upg="3">III</div>
-            <div class="web-node" data-upg="4">IV</div>
-            <div class="web-node" data-upg="5">V</div>
-            <div class="web-node" data-upg="6">VI</div>
+        <!-- MINIGAME BAR -->
+        <div id="minigame-bar">
+            <button class="mini-btn" id="btn-archaeotech">Archaeotech Lab</button>
+            <button class="mini-btn" id="btn-gravity">Gravity Nav</button>
+            <button class="mini-btn" id="btn-burrow">Burrow Network</button>
+            <button class="mini-btn" id="btn-neural">Neural Web</button>
+            <button class="mini-btn" id="btn-qtree">Q‑Tree / Ascend</button>
         </div>
 
-        <!-- CENTER: MAIN GAME -->
-        <div id="main-area">
-            <h1>Colonial Clicker</h1>
+        <!-- GENERIC MINIGAME OVERLAY -->
+        <div id="minigame-panel" class="overlay hidden">
+            <div class="overlay-inner">
+                <button class="close-overlay" id="close-minigame">✕</button>
+                <h2 id="minigame-title">Minigame</h2>
+                <div id="minigame-content"></div>
+            </div>
+        </div>
 
-            <div id="counter">Colonials: 0</div>
-            <div id="cps-counter">CPS: 0</div>
+        <!-- Q‑TREE PANEL -->
+        <div id="qtree-panel" class="overlay hidden">
+            <div class="overlay-inner">
+                <button class="close-overlay" id="close-qtree">✕</button>
+                <h2>Q‑Tree</h2>
+                <div id="q-essence-display"></div>
+                <div id="qtree-circle"></div>
+                <button id="ascend-btn">Ascend</button>
+            </div>
+        </div>
 
-            <button id="reset-btn">Reset Save</button>
+        <!-- BURROW NETWORK PANEL -->
+        <div id="burrow-panel" class="minigame-panel" style="display:none;">
+            <h2>Burrow Network</h2>
 
-            <div id="image-wrapper">
-                <img id="colonial-img" src="colonial.png" alt="Colonial">
-                <div id="float-container"></div>
+            <div id="burrow-info">
+                <span id="burrow-worms">Worms: 0</span>
+                <span id="burrow-runs">Runs: 0</span>
+                <span id="burrow-perm">Perm bonus: 0%</span>
             </div>
 
-            <!-- Golden event container -->
-            <div id="event-layer"></div>
-            <div id="golden-message"></div>
-
-            <!-- MINIGAME BAR -->
-            <div id="minigame-bar">
-                <button class="mini-btn" id="btn-archaeotech">Archaeotech Lab</button>
-                <button class="mini-btn" id="btn-gravity">Gravity Nav</button>
-                <button class="mini-btn" id="btn-burrow">Burrow Network</button>
-                <button class="mini-btn" id="btn-neural">Neural Web</button>
-                <button class="mini-btn" id="btn-qtree">Q‑Tree / Ascend</button>
+            <div id="burrow-controls">
+                <button id="burrow-start-run">Start Run</button>
+                <button id="burrow-end-run">End Run</button>
             </div>
 
-            <!-- GENERIC MINIGAME OVERLAY -->
-            <div id="minigame-panel" class="overlay hidden">
-                <div class="overlay-inner">
-                    <button class="close-overlay" id="close-minigame">✕</button>
-                    <h2 id="minigame-title">Minigame</h2>
-                    <div id="minigame-content"></div>
-                </div>
+            <div id="burrow-grid"></div>
+            <div id="burrow-status"></div>
+
+            <!-- Popup build menu -->
+            <div id="burrow-build-menu">
+                <button data-build="nursery">Nursery</button>
+                <button data-build="storage">Storage</button>
+                <button data-build="queenHall">Queen Hall</button>
             </div>
+        </div>
 
-            <!-- BURROW NETWORK PANEL -->
-            <div id="burrow-panel" class="minigame-panel" style="display:none;">
-                <h2>Burrow Network</h2>
-                <div id="burrow-info">
-                    <span id="burrow-worms">Worms: 0</span>
-                    <span id="burrow-runs">Runs: 0</span>
-                    <span id="burrow-perm">Perm bonus: 0%</span>
-                </div>
+        <!-- ARCHAEO TECH LAB PANEL -->
+        <div id="archaeotech-panel" class="minigame-panel" style="display:none;">
+            <h2>Archaeotech Lab</h2>
+            <div id="archaeotech-content"></div>
+        </div>
 
-                <div id="burrow-grid"></div>
+        <!-- GRAVITY NAVIGATION PANEL -->
+        <div id="gravity-nav-panel" class="minigame-panel" style="display:none;">
+            <h2>Gravity Navigation</h2>
 
-                <div id="burrow-status"></div>
+            <div id="gravity-depth">Depth: 0m</div>
+            <div id="gravity-evolution-display"></div>
 
-                <!-- Popup build menu -->
-                <div id="burrow-build-menu">
-                    <button data-build="nursery">Nursery</button>
+            <div id="gravity-cavern-viewport"></div>
+
+            <button id="gravity-reset-save">Reset Gravity Progress</button>
+
+            <div id="gravity-level-buttons">
+                <button class="gn-level-btn" data-level="1">Level 1</button>
+                <button class="gn-level-btn" data-level="2">Level 2</button>
+                <button class="gn-level-btn" data-level="3">Level 3</button>
+            </div>
+        </div>
+
+        <!-- NEURAL WEB PANEL (placeholder) -->
+        <div id="neural-panel" class="minigame-panel" style="display:none;">
+            <h2>Neural Web</h2>
+            <p>Coming soon.</p>
+        </div>
+
+    </div> <!-- end main-area -->
+
+</div> <!-- end game-container -->
+
+<script src="game.js"></script>
+</body>
+</html>
