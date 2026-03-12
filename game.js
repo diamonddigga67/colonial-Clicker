@@ -2058,6 +2058,101 @@ function applyMagneticForces() {
     });
 }
 applyMagneticForces();
+function spawnSporeVent(x, y, direction = 1) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const vent = document.createElement("div");
+    vent.classList.add("spore-vent");
+    vent.style.left = x + "px";
+    vent.style.top = y + "px";
+    vent.dataset.direction = direction;
+
+    viewport.appendChild(vent);
+    return vent;
+}
+function updateSporeVents() {
+    const vents = document.querySelectorAll(".spore-vent");
+
+    vents.forEach(v => {
+        if (Math.random() < 0.01) {
+            const cloud = document.createElement("div");
+            cloud.classList.add("spore-cloud");
+
+            const x = parseFloat(v.style.left);
+            const y = parseFloat(v.style.top);
+
+            cloud.style.left = (x + 20) + "px";
+            cloud.style.top = (y + 10) + "px";
+
+            const dir = parseInt(v.dataset.direction);
+            const push = dir * 0.6;
+
+            document.getElementById("gravity-cavern-viewport").appendChild(cloud);
+
+            // Apply force if larva is inside cloud
+            const interval = setInterval(() => {
+                const cx = parseFloat(cloud.style.left);
+                cloud.style.left = (cx + dir * 2) + "px";
+
+                if (
+                    larvaX > cx &&
+                    larvaX < cx + 80 &&
+                    larvaY > y &&
+                    larvaY < y + 40
+                ) {
+                    velX += push;
+                }
+            }, 30);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                cloud.remove();
+            }, 600);
+        }
+    });
+}
+updateSporeVents();
+function spawnTendril(x, y, swaySpeed = 0.02) {
+    const viewport = document.getElementById("gravity-cavern-viewport");
+
+    const t = document.createElement("div");
+    t.classList.add("tendril");
+    t.style.left = x + "px";
+    t.style.top = y + "px";
+    t.dataset.sway = swaySpeed;
+    t.dataset.angle = 0;
+
+    viewport.appendChild(t);
+    return t;
+}
+function updateTendrils() {
+    const tendrils = document.querySelectorAll(".tendril");
+
+    tendrils.forEach(t => {
+        let angle = parseFloat(t.dataset.angle);
+        const sway = parseFloat(t.dataset.sway);
+
+        angle += sway;
+        t.dataset.angle = angle;
+
+        const rot = Math.sin(angle) * 25;
+        t.style.transform = `rotate(${rot}deg)`;
+
+        // Collision check
+        const tx = parseFloat(t.style.left);
+        const ty = parseFloat(t.style.top);
+
+        if (
+            larvaX + 40 > tx &&
+            larvaX < tx + 20 &&
+            larvaY + 80 > ty &&
+            larvaY < ty + 120
+        ) {
+            handleLarvaCollision();
+        }
+    });
+}
+updateTendrils();
 
 /* INITIALIZE */
 loadGame();
