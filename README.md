@@ -1,2 +1,3 @@
 # Colonial Clicker
-A Cookie Clicker–style evolution game inspired by the posthuman species of *All Tomorrows*. Mutate your Colonials into Gravital, Worm Children, Snake People, and more.
+
+Colonial Clicker is an evolution-based incremental game inspired by All Tomorrows. Click to generate Colonials, evolve them into branching posthuman species, unlock special abilities, and build your own cosmic evolutionary tree.
