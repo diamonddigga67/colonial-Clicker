@@ -667,3 +667,41 @@ body::before {
     50% { box-shadow: 0 0 20px #ffd86a; }
     100% { box-shadow: 0 0 10px #ffd86a; }
 }
+/* Larval Drifter */
+#larva {
+    position: absolute;
+    width: 40px;
+    height: 80px;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    pointer-events: none;
+
+    /* Sleek alien glow */
+    background: linear-gradient(to bottom, #0ff8, #0a08);
+    border-radius: 20px 20px 10px 10px;
+    box-shadow: 0 0 12px #0ff5, 0 0 24px #0ff3 inset;
+
+    transition: transform 0.1s ease-out;
+}
+
+/* Thrust animations */
+.larva-thrust-left {
+    transform: translateX(-50%) rotate(-12deg);
+    box-shadow: 0 0 16px #0ff8, 0 0 32px #0ff5 inset;
+}
+
+.larva-thrust-right {
+    transform: translateX(-50%) rotate(12deg);
+    box-shadow: 0 0 16px #0ff8, 0 0 32px #0ff5 inset;
+}
+
+/* Hit flash */
+.larva-hit {
+    animation: larvaHitFlash 0.2s linear;
+}
+
+@keyframes larvaHitFlash {
+    0% { filter: brightness(2); }
+    100% { filter: brightness(1); }
+}
