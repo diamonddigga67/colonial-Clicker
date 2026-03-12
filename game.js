@@ -2627,6 +2627,12 @@ document.getElementById("gravity-reset-save").addEventListener("click", () => {
     }
 });
 
+const glow = document.createElement("div");
+glow.classList.add("cavern-glow");
+viewport.appendChild(glow);
+const rot = Math.sin(angle) * 35;
+document.getElementById("gravity-depth").textContent =
+    `Depth: ${Math.floor(larvaY)}m`;
 
 /* INITIALIZE */
 loadGame();
