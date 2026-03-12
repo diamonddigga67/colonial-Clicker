@@ -631,6 +631,19 @@ setInterval(() => {
 /* ============================
       GOLDEN EVENTS SYSTEM
 ============================ */
+/* ============================
+      GOLDEN EVENTS SYSTEM
+============================ */
+
+function showGoldenMessage(text) {
+    const msg = document.getElementById("golden-message");
+    msg.innerText = text;
+    msg.style.opacity = 1;
+
+    setTimeout(() => {
+        msg.style.opacity = 0;
+    }, 1800);
+}
 
 function spawnGoldenEvent() {
     const layer = document.getElementById("event-layer");
@@ -681,6 +694,7 @@ function triggerRandomEvent() {
 
 /* Gravity Surge: +500% CPS (x6) for 20s */
 function gravitySurge() {
+    showGoldenMessage("Gravity Surge! +500% CPS for 20s");
     goldenCpsMultiplier = 6;
     setTimeout(() => {
         goldenCpsMultiplier = 1;
@@ -691,8 +705,10 @@ function gravitySurge() {
 function geneticBloom() {
     let totalOwned = 0;
     buildings.forEach(b => totalOwned += b.owned);
-    const factor = 1 + totalOwned * 0.01;
-    goldenCpsMultiplier = factor;
+
+    showGoldenMessage(`Genetic Bloom! +${Math.floor(totalOwned)}% CPS for 30s`);
+
+    goldenCpsMultiplier = 1 + totalOwned * 0.01;
     setTimeout(() => {
         goldenCpsMultiplier = 1;
     }, 30000 * (1 + archaeotechPermanent.goldenDurationPercent / 100));
@@ -700,6 +716,7 @@ function geneticBloom() {
 
 /* Cosmic Visitor: instant 10x CPS */
 function cosmicVisitor() {
+    showGoldenMessage("Cosmic Visitor! Instant 10× CPS");
     colonials += getTotalCps() * 10;
     updateDisplay();
     saveGame();
@@ -707,6 +724,7 @@ function cosmicVisitor() {
 
 /* Ophidian Blessing: 50x click power for 15s */
 function ophidianBlessing() {
+    showGoldenMessage("Ophidian Blessing! 50× click power for 15s");
     clickEventMultiplier = 50;
     setTimeout(() => {
         clickEventMultiplier = 1;
@@ -715,6 +733,7 @@ function ophidianBlessing() {
 
 /* Wormquake: Worm branch +1000% CPS (x11) for 20s */
 function wormquake() {
+    showGoldenMessage("Wormquake! Worm CPS massively boosted");
     wormEventMultiplier = 11;
     setTimeout(() => {
         wormEventMultiplier = 1;
@@ -723,6 +742,7 @@ function wormquake() {
 
 /* Q Glimpse: random one of the above */
 function qGlimpse() {
+    showGoldenMessage("Q Glimpse! Reality shifts…");
     const events = [gravitySurge, geneticBloom, cosmicVisitor, ophidianBlessing, wormquake];
     const fn = events[Math.floor(Math.random() * events.length)];
     fn();
@@ -731,8 +751,10 @@ function qGlimpse() {
 /* Schedule golden events every 60–120s */
 function scheduleGoldenEvents() {
     let base = 60000 + Math.random() * 60000;
+
     if (isQBought("q_golden")) base *= 0.8; // +20% frequency
     base = base / tempGoldenFreqFactor;
+
     setTimeout(() => {
         spawnGoldenEvent();
         scheduleGoldenEvents();
