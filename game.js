@@ -23,6 +23,468 @@ let archaeotechPermanent = {
     goldenDurationPercent: 0,
     branchPercent: 0
 };
+/* ============================
+      BURROW NETWORK MINIGAME
+============================ */
+
+const BURROW_SIZE = 6;
+
+const BurrowTileType = {
+    HIDDEN: "hidden",
+    QUEEN: "queen",
+    DIRT: "dirt",
+    TUNNEL: "tunnel",
+    ROCK: "rock",
+    GAS: "gas",
+    RESOURCE: "resource",
+    ANCIENT: "ancient",
+    NURSERY: "nursery",
+    STORAGE: "storage",
+    QUEEN_HALL: "queenHall"
+};
+
+let burrowGame = {
+    grid: [],
+    worms: 0,
+    baseWorms: 3,
+    runs: 0,
+    permBonusPercent: 0,
+    inRun: false,
+    selectedTile: null,
+    totalResourcesThisRun: 0
+};
+
+function initBurrowNetwork() {
+    const btn = document.getElementById("btn-burrow-network");
+    if (btn) {
+        btn.addEventListener("click", () => showMinigamePanel("burrow-panel"));
+    }
+
+    const startBtn = document.getElementById("burrow-start-run");
+    const endBtn = document.getElementById("burrow-end-run");
+    const gridEl = document.getElementById("burrow-grid");
+    const buildMenu = document.getElementById("burrow-build-menu");
+
+    if (startBtn) startBtn.addEventListener("click", startBurrowRun);
+    if (endBtn) endBtn.addEventListener("click", endBurrowRun);
+
+    if (gridEl) {
+        gridEl.addEventListener("click", onBurrowGridClick);
+    }
+
+    if (buildMenu) {
+        buildMenu.addEventListener("click", onBurrowBuildMenuClick);
+    }
+
+    // Close popup when clicking outside
+    document.addEventListener("click", (e) => {
+        const menu = document.getElementById("burrow-build-menu");
+        const grid = document.getElementById("burrow-grid");
+        if (!menu || !grid) return;
+        if (!menu.contains(e.target) && !grid.contains(e.target)) {
+            hideBurrowBuildMenu();
+        }
+    });
+
+    updateBurrowUI();
+}
+
+function showMinigamePanel(id) {
+    const panels = document.querySelectorAll(".minigame-panel");
+    panels.forEach(p => p.style.display = "none");
+    const target = document.getElementById(id);
+    if (target) target.style.display = "block";
+}
+
+/* Run lifecycle */
+
+function startBurrowRun() {
+    if (burrowGame.inRun) return;
+    burrowGame.inRun = true;
+    burrowGame.worms = burrowGame.baseWorms;
+    burrowGame.totalResourcesThisRun = 0;
+    burrowGame.grid = createBurrowGrid();
+    renderBurrowGrid();
+    setBurrowStatus("Run started. Click tiles to dig and expand your network.");
+    updateBurrowUI();
+}
+
+function endBurrowRun(reason = "Run ended.") {
+    if (!burrowGame.inRun) return;
+    burrowGame.inRun = false;
+    burrowGame.runs++;
+    applyBurrowRewards();
+    setBurrowStatus(reason);
+    renderBurrowGrid();
+    updateBurrowUI();
+}
+
+/* Grid generation */
+
+function createBurrowGrid() {
+    const grid = [];
+    for (let y = 0; y < BURROW_SIZE; y++) {
+        const row = [];
+        for (let x = 0; x < BURROW_SIZE; x++) {
+            row.push({
+                x,
+                y,
+                type: BurrowTileType.HIDDEN,
+                revealed: false,
+                harvested: false
+            });
+        }
+        grid.push(row);
+    }
+
+    const cx = Math.floor(BURROW_SIZE / 2);
+    const cy = Math.floor(BURROW_SIZE / 2);
+    const queenTile = grid[cy][cx];
+    queenTile.type = BurrowTileType.QUEEN;
+    queenTile.revealed = true;
+
+    // Randomly seed hidden special tiles
+    const candidates = [];
+    for (let y = 0; y < BURROW_SIZE; y++) {
+        for (let x = 0; x < BURROW_SIZE; x++) {
+            if (x === cx && y === cy) continue;
+            candidates.push(grid[y][x]);
+        }
+    }
+
+    shuffleArray(candidates);
+
+    const numResources = 5;
+    const numGas = 3;
+    const numRock = 6;
+    const numAncient = 2;
+
+    let idx = 0;
+    for (let i = 0; i < numResources && idx < candidates.length; i++, idx++) {
+        candidates[idx].type = BurrowTileType.RESOURCE;
+    }
+    for (let i = 0; i < numGas && idx < candidates.length; i++, idx++) {
+        candidates[idx].type = BurrowTileType.GAS;
+    }
+    for (let i = 0; i < numRock && idx < candidates.length; i++, idx++) {
+        candidates[idx].type = BurrowTileType.ROCK;
+    }
+    for (let i = 0; i < numAncient && idx < candidates.length; i++, idx++) {
+        candidates[idx].type = BurrowTileType.ANCIENT;
+    }
+
+    // All others remain "hidden" but will reveal as dirt
+    return grid;
+}
+
+function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+}
+
+/* Rendering */
+
+function renderBurrowGrid() {
+    const gridEl = document.getElementById("burrow-grid");
+    if (!gridEl) return;
+    gridEl.innerHTML = "";
+
+    for (let y = 0; y < BURROW_SIZE; y++) {
+        for (let x = 0; x < BURROW_SIZE; x++) {
+            const tile = burrowGame.grid[y][x];
+            const div = document.createElement("div");
+            div.classList.add("burrow-tile");
+            div.dataset.x = x;
+            div.dataset.y = y;
+
+            let cls = BurrowTileType.HIDDEN;
+            let label = "";
+
+            if (!tile.revealed && tile.type !== BurrowTileType.QUEEN) {
+                cls = BurrowTileType.HIDDEN;
+            } else {
+                cls = tile.type;
+            }
+
+            div.classList.add(cls);
+
+            switch (cls) {
+                case BurrowTileType.QUEEN:
+                    label = "Q";
+                    break;
+                case BurrowTileType.DIRT:
+                    label = "";
+                    break;
+                case BurrowTileType.TUNNEL:
+                    label = "";
+                    break;
+                case BurrowTileType.ROCK:
+                    label = "⛰";
+                    break;
+                case BurrowTileType.GAS:
+                    label = "☣";
+                    break;
+                case BurrowTileType.RESOURCE:
+                    label = tile.harvested ? "✓" : "✦";
+                    break;
+                case BurrowTileType.ANCIENT:
+                    label = "⌘";
+                    break;
+                case BurrowTileType.NURSERY:
+                    label = "N";
+                    break;
+                case BurrowTileType.STORAGE:
+                    label = "S";
+                    break;
+                case BurrowTileType.QUEEN_HALL:
+                    label = "H";
+                    break;
+                default:
+                    label = "";
+            }
+
+            div.textContent = label;
+            gridEl.appendChild(div);
+        }
+    }
+}
+
+/* Click handling */
+
+function onBurrowGridClick(e) {
+    if (!burrowGame.inRun) return;
+    const tileEl = e.target.closest(".burrow-tile");
+    if (!tileEl) return;
+
+    const x = parseInt(tileEl.dataset.x, 10);
+    const y = parseInt(tileEl.dataset.y, 10);
+    const tile = burrowGame.grid[y][x];
+
+    if (!tile) return;
+
+    // Each action costs 1 worm
+    if (burrowGame.worms <= 0) {
+        setBurrowStatus("No worms left. Run will end.");
+        endBurrowRun("No worms left.");
+        return;
+    }
+
+    if (!tile.revealed && tile.type !== BurrowTileType.QUEEN) {
+        burrowDig(tile);
+    } else {
+        burrowActOnRevealed(tile);
+    }
+
+    updateBurrowUI();
+    renderBurrowGrid();
+}
+
+function burrowDig(tile) {
+    burrowGame.worms--;
+
+    // Reveal tile
+    tile.revealed = true;
+
+    if (tile.type === BurrowTileType.RESOURCE) {
+        setBurrowStatus("You uncovered a resource node. Click it to harvest.");
+    } else if (tile.type === BurrowTileType.GAS) {
+        setBurrowStatus("Gas pocket! The burrow collapses.");
+        endBurrowRun("Gas pocket collapse.");
+        return;
+    } else if (tile.type === BurrowTileType.ROCK) {
+        setBurrowStatus("Rock wall. Impassable.");
+    } else if (tile.type === BurrowTileType.ANCIENT) {
+        setBurrowStatus("Ancient burrow discovered! Q‑Essence surges.");
+        burrowGame.totalResourcesThisRun += 3;
+        grantBurrowQEssence(3 + Math.floor(Math.random() * 3));
+        // Turn it into dirt for further expansion
+        tile.type = BurrowTileType.DIRT;
+    } else {
+        tile.type = BurrowTileType.DIRT;
+        setBurrowStatus("Dirt cleared. You can expand a tunnel here.");
+    }
+}
+
+function burrowActOnRevealed(tile) {
+    switch (tile.type) {
+        case BurrowTileType.DIRT:
+            burrowExpandTunnel(tile);
+            break;
+        case BurrowTileType.TUNNEL:
+            showBurrowBuildMenu(tile);
+            break;
+        case BurrowTileType.RESOURCE:
+            burrowHarvest(tile);
+            break;
+        case BurrowTileType.NURSERY:
+        case BurrowTileType.STORAGE:
+        case BurrowTileType.QUEEN_HALL:
+            setBurrowStatus("Chamber already built here.");
+            break;
+        case BurrowTileType.QUEEN:
+            setBurrowStatus("The Worm Queen watches your work.");
+            break;
+        default:
+            setBurrowStatus("Nothing more to do here.");
+    }
+}
+
+function burrowExpandTunnel(tile) {
+    burrowGame.worms--;
+    tile.type = BurrowTileType.TUNNEL;
+    setBurrowStatus("Tunnel expanded. You can build a chamber here.");
+}
+
+function burrowHarvest(tile) {
+    if (tile.harvested) {
+        setBurrowStatus("This node has already been harvested.");
+        return;
+    }
+    burrowGame.worms--;
+    tile.harvested = true;
+    burrowGame.totalResourcesThisRun += 1;
+    setBurrowStatus("Resources harvested. Worm branch grows stronger.");
+}
+
+/* Build menu */
+
+function showBurrowBuildMenu(tile) {
+    const menu = document.getElementById("burrow-build-menu");
+    const grid = document.getElementById("burrow-grid");
+    if (!menu || !grid) return;
+
+    burrowGame.selectedTile = tile;
+
+    const gridRect = grid.getBoundingClientRect();
+    const tileIndex = tile.y * BURROW_SIZE + tile.x;
+    const tileEl = grid.children[tileIndex];
+    if (!tileEl) return;
+
+    const rect = tileEl.getBoundingClientRect();
+
+    menu.style.display = "flex";
+    menu.style.left = (rect.left - gridRect.left + rect.width / 2 - 50) + "px";
+    menu.style.top = (rect.top - gridRect.top - 60) + "px";
+}
+
+function hideBurrowBuildMenu() {
+    const menu = document.getElementById("burrow-build-menu");
+    if (menu) menu.style.display = "none";
+    burrowGame.selectedTile = null;
+}
+
+function onBurrowBuildMenuClick(e) {
+    const btn = e.target.closest("button[data-build]");
+    if (!btn) return;
+    const type = btn.dataset.build;
+    const tile = burrowGame.selectedTile;
+    if (!tile) return;
+
+    burrowGame.worms--;
+
+    if (type === "nursery") {
+        tile.type = BurrowTileType.NURSERY;
+        burrowGame.baseWorms += 0; // permanent handled separately if you want
+        burrowGame.worms += 1;
+        setBurrowStatus("Nursery built. +1 worm this run.");
+    } else if (type === "storage") {
+        tile.type = BurrowTileType.STORAGE;
+        burrowGame.totalResourcesThisRun += 1;
+        setBurrowStatus("Storage built. Resource yield improved.");
+    } else if (type === "queenHall") {
+        tile.type = BurrowTileType.QUEEN_HALL;
+        burrowGame.permBonusPercent += 1;
+        setBurrowStatus("Queen’s Hall built. Permanent worm CPS +1%.");
+        applyBurrowPermanentBonus();
+    }
+
+    hideBurrowBuildMenu();
+    renderBurrowGrid();
+    updateBurrowUI();
+}
+
+/* Rewards */
+
+function applyBurrowRewards() {
+    const gained = burrowGame.totalResourcesThisRun;
+
+    if (gained <= 0) {
+        setBurrowStatus("The burrow yields nothing this time.");
+        return;
+    }
+
+    // Temporary worm CPS boost
+    const duration = 30000;
+    const boost = 2;
+    setBurrowStatus(`Burrow yields ${gained} resources. Worm CPS x${boost} for 30s.`);
+    burrowApplyTemporaryWormBoost(boost, duration);
+
+    // Small permanent bonus
+    const permGain = Math.min(3, gained);
+    burrowGame.permBonusPercent += permGain;
+    applyBurrowPermanentBonus();
+}
+
+function burrowApplyTemporaryWormBoost(multiplier, duration) {
+    // Reuse wormEventMultiplier if you already have it
+    if (typeof wormEventMultiplier === "undefined") return;
+    wormEventMultiplier *= multiplier;
+    setTimeout(() => {
+        wormEventMultiplier /= multiplier;
+    }, duration);
+}
+
+function applyBurrowPermanentBonus() {
+    // Hook this into your worm branch CPS calculation
+    // Example: store in a global used in getWormCps()
+    // Here we just keep it on burrowGame.permBonusPercent
+}
+
+/* Q‑Essence hook (optional) */
+
+function grantBurrowQEssence(amount) {
+    if (typeof qEssence !== "undefined") {
+        qEssence += amount;
+        updateDisplay && updateDisplay();
+    }
+}
+
+/* UI helpers */
+
+function updateBurrowUI() {
+    const wormsEl = document.getElementById("burrow-worms");
+    const runsEl = document.getElementById("burrow-runs");
+    const permEl = document.getElementById("burrow-perm");
+
+    if (wormsEl) wormsEl.textContent = `Worms: ${burrowGame.worms}`;
+    if (runsEl) runsEl.textContent = `Runs: ${burrowGame.runs}`;
+    if (permEl) permEl.textContent = `Perm bonus: ${burrowGame.permBonusPercent}%`;
+}
+
+function setBurrowStatus(text) {
+    const el = document.getElementById("burrow-status");
+    if (el) el.textContent = text;
+}
+
+/* Save / load hooks */
+
+function saveBurrowData() {
+    return {
+        baseWorms: burrowGame.baseWorms,
+        permBonusPercent: burrowGame.permBonusPercent,
+        runs: burrowGame.runs
+    };
+}
+
+function loadBurrowData(data) {
+    if (!data) return;
+    burrowGame.baseWorms = data.baseWorms ?? burrowGame.baseWorms;
+    burrowGame.permBonusPercent = data.permBonusPercent ?? 0;
+    burrowGame.runs = data.runs ?? 0;
+    updateBurrowUI();
+}
 
 /* Q‑Essence / Q‑Tree */
 let qEssence = 0;
