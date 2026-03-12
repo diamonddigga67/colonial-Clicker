@@ -1680,6 +1680,8 @@ function loadGame() {
 
     const data = JSON.parse(raw);
 
+    if (data.burrow) loadBurrowData(data.burrow);
+
     colonials = data.colonials ?? 0;
 
     data.buildings?.forEach(saved => {
